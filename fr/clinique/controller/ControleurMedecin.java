@@ -23,11 +23,16 @@ public class ControleurMedecin {
     public ControleurMedecin(VueMedecin vue) {
         this.vue = vue;
 
+        System.out.println("Initialisation du contrôleur médecin");
+
         // Initialiser la vue avec les données
         chargerDonnees();
 
         // Ajouter les écouteurs d'événements
         ajouterEcouteurs();
+
+        // Réattacher les écouteurs aux boutons du formulaire
+        attacherEcouteursFormulaire();
     }
 
     /**
@@ -43,13 +48,16 @@ public class ControleurMedecin {
      */
     private void ajouterEcouteurs() {
         // Bouton Ajouter
-        vue.getBtnAjouter().addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                vue.afficherFormulaireAjout();
-            }
-        });
+            // Bouton Ajouter
+            vue.getBtnAjouter().addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    vue.afficherFormulaireAjout();
 
+                    // Réattacher les écouteurs aux boutons du formulaire
+                    attacherEcouteursFormulaire();
+                }
+            });
         // Bouton Modifier
         vue.getBtnModifier().addActionListener(new ActionListener() {
             @Override
@@ -59,6 +67,9 @@ public class ControleurMedecin {
                     int id = (int) vue.getModelTable().getValueAt(selectedRow, 0);
                     vue.setIdMedecinSelectionne(id);
                     vue.afficherFormulaireModification(id);
+
+                    // Réattacher les écouteurs aux boutons du formulaire
+                    attacherEcouteursFormulaire();
                 } else {
                     vue.afficherMessage("Veuillez sélectionner un médecin à modifier", "Aucune sélection", JOptionPane.WARNING_MESSAGE);
                 }
@@ -137,20 +148,6 @@ public class ControleurMedecin {
             }
         });
 
-        // Double-clic sur une ligne du tableau
-        vue.getTableMedecins().addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int selectedRow = vue.getTableMedecins().getSelectedRow();
-                    if (selectedRow >= 0 && vue.getUtilisateur().getRole() == Role.ADMINISTRATEUR) {
-                        int id = (int) vue.getModelTable().getValueAt(selectedRow, 0);
-                        vue.setIdMedecinSelectionne(id);
-                        vue.afficherFormulaireModification(id);
-                    }
-                }
-            }
-        });
 
         // Bouton Valider du formulaire
         if (vue.getBtnValider() != null) {
@@ -173,10 +170,11 @@ public class ControleurMedecin {
         }
     }
 
-    /**
-     * Valide le formulaire d'ajout ou de modification d'un médecin.
-     */
+
+
     private void validerFormulaire() {
+        System.out.println("Début de la validation du formulaire médecin");
+
         // Vérifier que tous les champs obligatoires sont remplis
         if (vue.getTfNom().getText().trim().isEmpty() ||
                 vue.getTfPrenom().getText().trim().isEmpty() ||
@@ -194,48 +192,97 @@ public class ControleurMedecin {
         }
 
         boolean result;
-        if (vue.isModeAjout()) {
-            // Ajouter un nouveau médecin avec compte utilisateur
-            Medecin medecin = new Medecin(
-                    vue.getTfNom().getText().trim(),
-                    vue.getTfPrenom().getText().trim(),
-                    vue.getTfLogin().getText().trim(),
-                    vue.getTfPassword().getText(),
-                    vue.getTfSpecialite().getText().trim(),
-                    vue.getTfHoraires().getText().trim()
-            );
-
-            result = medecin.enregistrer();
-
-            if (result) {
-                vue.afficherMessage("Médecin ajouté avec succès", "Ajout réussi", JOptionPane.INFORMATION_MESSAGE);
-                vue.getDialogFormulaire().dispose();
-                chargerDonnees();
-            } else {
-                vue.afficherMessage("Erreur lors de l'ajout du médecin", "Erreur", JOptionPane.ERROR_MESSAGE);
-            }
-        } else {
-            // Modifier un médecin existant
-            Medecin medecin = MedecinModel.getMedecinById(vue.getIdMedecinSelectionne());
-
-            if (medecin != null) {
-                medecin.setNom(vue.getTfNom().getText().trim());
-                medecin.setPrenom(vue.getTfPrenom().getText().trim());
-                medecin.setSpecialite(vue.getTfSpecialite().getText().trim());
-                medecin.setHoraires(vue.getTfHoraires().getText().trim());
+        try {
+            if (vue.isModeAjout()) {
+                // Ajouter un nouveau médecin avec compte utilisateur
+                System.out.println("Tentative d'ajout d'un nouveau médecin");
+                Medecin medecin = new Medecin(
+                        vue.getTfNom().getText().trim(),
+                        vue.getTfPrenom().getText().trim(),
+                        vue.getTfLogin().getText().trim(),
+                        vue.getTfPassword().getText(),
+                        vue.getTfSpecialite().getText().trim(),
+                        vue.getTfHoraires().getText().trim()
+                );
 
                 result = medecin.enregistrer();
 
                 if (result) {
-                    vue.afficherMessage("Médecin modifié avec succès", "Modification réussie", JOptionPane.INFORMATION_MESSAGE);
+                    System.out.println("Médecin ajouté avec succès");
+                    vue.afficherMessage("Médecin ajouté avec succès", "Ajout réussi", JOptionPane.INFORMATION_MESSAGE);
                     vue.getDialogFormulaire().dispose();
-                    chargerDonnees();
+                    chargerDonnees(); // Recharger la liste des médecins
                 } else {
-                    vue.afficherMessage("Erreur lors de la modification du médecin", "Erreur", JOptionPane.ERROR_MESSAGE);
+                    System.out.println("Erreur lors de l'ajout du médecin");
+                    vue.afficherMessage("Erreur lors de l'ajout du médecin", "Erreur", JOptionPane.ERROR_MESSAGE);
                 }
             } else {
-                vue.afficherMessage("Médecin introuvable", "Erreur", JOptionPane.ERROR_MESSAGE);
+                // Modifier un médecin existant
+                System.out.println("Tentative de modification du médecin #" + vue.getIdMedecinSelectionne());
+                Medecin medecin = MedecinModel.getMedecinById(vue.getIdMedecinSelectionne());
+
+                if (medecin != null) {
+                    medecin.setNom(vue.getTfNom().getText().trim());
+                    medecin.setPrenom(vue.getTfPrenom().getText().trim());
+                    medecin.setSpecialite(vue.getTfSpecialite().getText().trim());
+                    medecin.setHoraires(vue.getTfHoraires().getText().trim());
+
+                    result = medecin.enregistrer();
+
+                    if (result) {
+                        System.out.println("Médecin modifié avec succès");
+                        vue.afficherMessage("Médecin modifié avec succès", "Modification réussie", JOptionPane.INFORMATION_MESSAGE);
+                        vue.getDialogFormulaire().dispose();
+                        chargerDonnees(); // Recharger la liste des médecins
+                    } else {
+                        System.out.println("Erreur lors de la modification du médecin");
+                        vue.afficherMessage("Erreur lors de la modification du médecin", "Erreur", JOptionPane.ERROR_MESSAGE);
+                    }
+                } else {
+                    System.out.println("Médecin introuvable");
+                    vue.afficherMessage("Médecin introuvable", "Erreur", JOptionPane.ERROR_MESSAGE);
+                }
             }
+        } catch (Exception e) {
+            System.err.println("Exception lors de l'opération sur médecin: " + e.getMessage());
+            e.printStackTrace();
+            vue.afficherMessage("Erreur: " + e.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    public void attacherEcouteursFormulaire() {
+        // Vérifier si les boutons du formulaire existent
+        if (vue.getBtnValider() != null) {
+            // Supprimer tous les écouteurs existants pour éviter les doublons
+            for (ActionListener al : vue.getBtnValider().getActionListeners()) {
+                vue.getBtnValider().removeActionListener(al);
+            }
+
+            // Ajouter le nouvel écouteur
+            vue.getBtnValider().addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    System.out.println("Bouton Valider cliqué - appel à validerFormulaire()");
+                    validerFormulaire();
+                }
+            });
+        }
+
+        if (vue.getBtnAnnuler() != null) {
+            // Supprimer tous les écouteurs existants pour éviter les doublons
+            for (ActionListener al : vue.getBtnAnnuler().getActionListeners()) {
+                vue.getBtnAnnuler().removeActionListener(al);
+            }
+
+            // Ajouter le nouvel écouteur
+            vue.getBtnAnnuler().addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    System.out.println("Bouton Annuler cliqué - fermeture du formulaire");
+                    if (vue.getDialogFormulaire() != null) {
+                        vue.getDialogFormulaire().dispose();
+                    }
+                }
+            });
         }
     }
 }

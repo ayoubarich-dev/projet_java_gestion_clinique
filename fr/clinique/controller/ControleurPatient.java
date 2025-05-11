@@ -27,11 +27,16 @@ public class ControleurPatient {
     public ControleurPatient(VuePatient vue) {
         this.vue = vue;
 
+        System.out.println("Initialisation du contrôleur patient");
+
         // Initialiser la vue avec les données
         chargerDonnees();
 
         // Ajouter les écouteurs d'événements
         ajouterEcouteurs();
+
+        // Réattacher les écouteurs aux boutons du formulaire
+        attacherEcouteursFormulaire();
     }
 
     /**
@@ -76,6 +81,9 @@ public class ControleurPatient {
             @Override
             public void actionPerformed(ActionEvent e) {
                 vue.afficherFormulaireAjout();
+
+                // Réattacher les écouteurs aux boutons du formulaire
+                attacherEcouteursFormulaire();
             }
         });
 
@@ -88,6 +96,9 @@ public class ControleurPatient {
                     int id = (int) vue.getModelTable().getValueAt(selectedRow, 0);
                     vue.setIdPatientSelectionne(id);
                     vue.afficherFormulaireModification(id);
+
+                    // Réattacher les écouteurs aux boutons du formulaire
+                    attacherEcouteursFormulaire();
                 } else {
                     vue.afficherMessage("Veuillez sélectionner un patient à modifier", "Aucune sélection", JOptionPane.WARNING_MESSAGE);
                 }
@@ -131,7 +142,7 @@ public class ControleurPatient {
                     if (patient != null) {
                         vue.getModelTable().setRowCount(0);
                         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-                        vue.getModelTable().addRow(new Object[] {
+                        vue.getModelTable().addRow(new Object[]{
                                 patient.getId(),
                                 patient.getNom(),
                                 patient.getPrenom(),
@@ -156,47 +167,19 @@ public class ControleurPatient {
                 chargerDonnees();
             }
         });
-
-        // Double-clic sur une ligne du tableau
-        vue.getTablePatients().addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int selectedRow = vue.getTablePatients().getSelectedRow();
-                    if (selectedRow >= 0) {
-                        int id = (int) vue.getModelTable().getValueAt(selectedRow, 0);
-                        vue.setIdPatientSelectionne(id);
-                        vue.afficherFormulaireModification(id);
-                    }
-                }
-            }
-        });
-
-        // Bouton Valider du formulaire
-        if (vue.getBtnValider() != null) {
-            vue.getBtnValider().addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    validerFormulaire();
-                }
-            });
-        }
-
-        // Bouton Annuler du formulaire
-        if (vue.getBtnAnnuler() != null) {
-            vue.getBtnAnnuler().addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    vue.getDialogFormulaire().dispose();
-                }
-            });
-        }
     }
+
+
 
     /**
      * Valide le formulaire d'ajout ou de modification d'un patient.
      */
+    /**
+     * Valide le formulaire d'ajout ou de modification d'un patient.
+     */
     private void validerFormulaire() {
+        System.out.println("Début de la validation du formulaire patient");
+
         // Vérifier que tous les champs sont remplis
         if (vue.getTfNom().getText().trim().isEmpty() ||
                 vue.getTfPrenom().getText().trim().isEmpty() ||
@@ -220,48 +203,98 @@ public class ControleurPatient {
         }
 
         boolean result;
-        if (vue.isModeAjout()) {
-            // Ajouter un nouveau patient
-            Patient patient = new Patient(
-                vue.getTfNom().getText().trim(),
-                vue.getTfPrenom().getText().trim(),
-                dateNaissance,
-                vue.getTfTelephone().getText().trim()
-            );
-
-            result = patient.enregistrer();
-
-            if (result) {
-                vue.afficherMessage("Patient ajouté avec succès", "Ajout réussi", JOptionPane.INFORMATION_MESSAGE);
-                vue.getDialogFormulaire().dispose();
-                chargerDonnees();
-            } else {
-                vue.afficherMessage("Erreur lors de l'ajout du patient", "Erreur", JOptionPane.ERROR_MESSAGE);
-            }
-        } else {
-            // Modifier un patient existant
-            Patient patient = new Patient();
-            Personne personne = patient.rechercherParId(vue.getIdPatientSelectionne());
-
-            if (personne instanceof Patient) {
-                patient = (Patient) personne;
-                patient.setNom(vue.getTfNom().getText().trim());
-                patient.setPrenom(vue.getTfPrenom().getText().trim());
-                patient.setDateNaissance(dateNaissance);
-                patient.setTelephone(vue.getTfTelephone().getText().trim());
+        try {
+            if (vue.isModeAjout()) {
+                // Ajouter un nouveau patient
+                System.out.println("Tentative d'ajout d'un nouveau patient");
+                Patient patient = new Patient(
+                        vue.getTfNom().getText().trim(),
+                        vue.getTfPrenom().getText().trim(),
+                        dateNaissance,
+                        vue.getTfTelephone().getText().trim()
+                );
 
                 result = patient.enregistrer();
 
                 if (result) {
-                    vue.afficherMessage("Patient modifié avec succès", "Modification réussie", JOptionPane.INFORMATION_MESSAGE);
+                    System.out.println("Patient ajouté avec succès");
+                    vue.afficherMessage("Patient ajouté avec succès", "Ajout réussi", JOptionPane.INFORMATION_MESSAGE);
                     vue.getDialogFormulaire().dispose();
-                    chargerDonnees();
+                    chargerDonnees(); // Recharger la liste des patients
                 } else {
-                    vue.afficherMessage("Erreur lors de la modification du patient", "Erreur", JOptionPane.ERROR_MESSAGE);
+                    System.out.println("Erreur lors de l'ajout du patient");
+                    vue.afficherMessage("Erreur lors de l'ajout du patient", "Erreur", JOptionPane.ERROR_MESSAGE);
                 }
             } else {
-                vue.afficherMessage("Patient introuvable", "Erreur", JOptionPane.ERROR_MESSAGE);
+                // Modifier un patient existant
+                System.out.println("Tentative de modification du patient #" + vue.getIdPatientSelectionne());
+                Patient patient = new Patient();
+                Personne personne = patient.rechercherParId(vue.getIdPatientSelectionne());
+
+                if (personne instanceof Patient) {
+                    patient = (Patient) personne;
+                    patient.setNom(vue.getTfNom().getText().trim());
+                    patient.setPrenom(vue.getTfPrenom().getText().trim());
+                    patient.setDateNaissance(dateNaissance);
+                    patient.setTelephone(vue.getTfTelephone().getText().trim());
+
+                    result = patient.enregistrer();
+
+                    if (result) {
+                        System.out.println("Patient modifié avec succès");
+                        vue.afficherMessage("Patient modifié avec succès", "Modification réussie", JOptionPane.INFORMATION_MESSAGE);
+                        vue.getDialogFormulaire().dispose();
+                        chargerDonnees(); // Recharger la liste des patients
+                    } else {
+                        System.out.println("Erreur lors de la modification du patient");
+                        vue.afficherMessage("Erreur lors de la modification du patient", "Erreur", JOptionPane.ERROR_MESSAGE);
+                    }
+                } else {
+                    System.out.println("Patient introuvable");
+                    vue.afficherMessage("Patient introuvable", "Erreur", JOptionPane.ERROR_MESSAGE);
+                }
             }
+        } catch (Exception e) {
+            System.err.println("Exception lors de l'opération sur patient: " + e.getMessage());
+            e.printStackTrace();
+            vue.afficherMessage("Erreur: " + e.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public void attacherEcouteursFormulaire() {
+        // Vérifier si les boutons du formulaire existent
+        if (vue.getBtnValider() != null) {
+            // Supprimer tous les écouteurs existants pour éviter les doublons
+            for (ActionListener al : vue.getBtnValider().getActionListeners()) {
+                vue.getBtnValider().removeActionListener(al);
+            }
+
+            // Ajouter le nouvel écouteur
+            vue.getBtnValider().addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    System.out.println("Bouton Valider cliqué - appel à validerFormulaire()");
+                    validerFormulaire();
+                }
+            });
+        }
+
+        if (vue.getBtnAnnuler() != null) {
+            // Supprimer tous les écouteurs existants pour éviter les doublons
+            for (ActionListener al : vue.getBtnAnnuler().getActionListeners()) {
+                vue.getBtnAnnuler().removeActionListener(al);
+            }
+
+            // Ajouter le nouvel écouteur
+            vue.getBtnAnnuler().addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    System.out.println("Bouton Annuler cliqué - fermeture du formulaire");
+                    if (vue.getDialogFormulaire() != null) {
+                        vue.getDialogFormulaire().dispose();
+                    }
+                }
+            });
         }
     }
 }

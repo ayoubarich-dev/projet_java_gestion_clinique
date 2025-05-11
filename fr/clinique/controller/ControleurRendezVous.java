@@ -30,11 +30,16 @@ public class ControleurRendezVous {
     public ControleurRendezVous(VueRendezVous vue) {
         this.vue = vue;
 
+        System.out.println("Initialisation du contrôleur rendez-vous");
+
         // Initialiser la vue avec les données
         chargerDonnees();
 
         // Ajouter les écouteurs d'événements
         ajouterEcouteurs();
+
+        // Réattacher les écouteurs aux boutons du formulaire
+        attacherEcouteursFormulaire();
     }
 
     /**
@@ -86,6 +91,9 @@ public class ControleurRendezVous {
 
                 vue.remplirComboBoxes(patients, medecins);
                 vue.afficherFormulaireAjout();
+
+                // Réattacher les écouteurs aux boutons du formulaire
+                attacherEcouteursFormulaire();
             }
         });
 
@@ -207,7 +215,12 @@ public class ControleurRendezVous {
     /**
      * Valide le formulaire d'ajout ou de modification d'un rendez-vous.
      */
+    /**
+     * Valide le formulaire d'ajout ou de modification d'un rendez-vous.
+     */
     private void validerFormulaire() {
+        System.out.println("Début de la validation du formulaire rendez-vous");
+
         // Vérifier que tous les champs sont remplis
         if (vue.getCbPatient().getSelectedIndex() == -1 ||
                 vue.getCbMedecin().getSelectedIndex() == -1 ||
@@ -242,51 +255,99 @@ public class ControleurRendezVous {
         String motif = vue.getTfMotif().getText().trim();
 
         boolean result;
-        if (vue.isModeAjout()) {
-            // Ajouter un nouveau rendez-vous
-            result = RendezVousModel.ajouterRendezVous(patient.getId(), medecin.getId(), date, heure, motif);
+        try {
+            if (vue.isModeAjout()) {
+                // Ajouter un nouveau rendez-vous
+                System.out.println("Tentative d'ajout d'un nouveau rendez-vous");
+                result = RendezVousModel.ajouterRendezVous(patient.getId(), medecin.getId(), date, heure, motif);
 
-            if (result) {
-                // Ajouter un message spécifique pour ce médecin
-                String messageSpecifique = "Nouveau patient affecté: " +
-                        patient.getPrenom() + " " + patient.getNom() +
-                        " le " + sdf.format(date) + " à " + heure;
-                Medecin.ajouterMessagePourMedecin(medecin.getId(), messageSpecifique);
+                if (result) {
+                    System.out.println("Rendez-vous ajouté avec succès");
+                    // Ajouter un message spécifique pour ce médecin
+                    String messageSpecifique = "Nouveau patient affecté: " +
+                            patient.getPrenom() + " " + patient.getNom() +
+                            " le " + sdf.format(date) + " à " + heure;
+                    Medecin.ajouterMessagePourMedecin(medecin.getId(), messageSpecifique);
 
-                // Notification générale
-                NotificationManager.getInstance().ajouterNotification(
-                        "Nouveau rendez-vous créé pour le Dr. " + medecin.getPrenom() + " " +
-                                medecin.getNom() + " avec " + patient.getPrenom() + " " +
-                                patient.getNom() + " le " + vue.getFtfDate().getText() + " à " + heure
-                );
+                    // Notification générale
+                    NotificationManager.getInstance().ajouterNotification(
+                            "Nouveau rendez-vous créé pour le Dr. " + medecin.getPrenom() + " " +
+                                    medecin.getNom() + " avec " + patient.getPrenom() + " " +
+                                    patient.getNom() + " le " + vue.getFtfDate().getText() + " à " + heure
+                    );
 
-                vue.afficherMessage("Rendez-vous ajouté avec succès", "Ajout réussi", JOptionPane.INFORMATION_MESSAGE);
-                vue.getDialogFormulaire().dispose();
-                chargerDonnees();
+                    vue.afficherMessage("Rendez-vous ajouté avec succès", "Ajout réussi", JOptionPane.INFORMATION_MESSAGE);
+                    vue.getDialogFormulaire().dispose();
+                    chargerDonnees(); // Recharger la liste des rendez-vous
+                } else {
+                    System.out.println("Erreur lors de l'ajout du rendez-vous");
+                    vue.afficherMessage("Erreur lors de l'ajout du rendez-vous", "Erreur", JOptionPane.ERROR_MESSAGE);
+                }
             } else {
-                vue.afficherMessage("Erreur lors de l'ajout du rendez-vous", "Erreur", JOptionPane.ERROR_MESSAGE);
-            }
-        } else {
-            // Modifier un rendez-vous existant
-            result = RendezVousModel.modifierRendezVous(vue.getIdRendezVousSelectionne(), patient.getId(), medecin.getId(), date, heure, motif);
+                // Modifier un rendez-vous existant
+                System.out.println("Tentative de modification du rendez-vous #" + vue.getIdRendezVousSelectionne());
+                result = RendezVousModel.modifierRendezVous(vue.getIdRendezVousSelectionne(), patient.getId(), medecin.getId(), date, heure, motif);
 
-            if (result) {
-                // Ajouter une notification
-                NotificationManager.getInstance().ajouterNotification(
-                        "Rendez-vous modifié pour Dr. " + medecin.getPrenom() + " " +
-                                medecin.getNom() + " avec " + patient.getPrenom() + " " +
-                                patient.getNom() + " le " + sdf.format(date) + " à " + heure
-                );
+                if (result) {
+                    System.out.println("Rendez-vous modifié avec succès");
+                    // Ajouter une notification
+                    NotificationManager.getInstance().ajouterNotification(
+                            "Rendez-vous modifié pour Dr. " + medecin.getPrenom() + " " +
+                                    medecin.getNom() + " avec " + patient.getPrenom() + " " +
+                                    patient.getNom() + " le " + sdf.format(date) + " à " + heure
+                    );
 
-                vue.afficherMessage("Rendez-vous modifié avec succès", "Modification réussie", JOptionPane.INFORMATION_MESSAGE);
-                vue.getDialogFormulaire().dispose();
-                chargerDonnees();
-            } else {
-                vue.afficherMessage("Erreur lors de la modification du rendez-vous", "Erreur", JOptionPane.ERROR_MESSAGE);
+                    vue.afficherMessage("Rendez-vous modifié avec succès", "Modification réussie", JOptionPane.INFORMATION_MESSAGE);
+                    vue.getDialogFormulaire().dispose();
+                    chargerDonnees(); // Recharger la liste des rendez-vous
+                } else {
+                    System.out.println("Erreur lors de la modification du rendez-vous");
+                    vue.afficherMessage("Erreur lors de la modification du rendez-vous", "Erreur", JOptionPane.ERROR_MESSAGE);
+                }
             }
+        } catch (Exception e) {
+            System.err.println("Exception lors de l'opération sur rendez-vous: " + e.getMessage());
+            e.printStackTrace();
+            vue.afficherMessage("Erreur: " + e.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
         }
     }
 
+    public void attacherEcouteursFormulaire() {
+        // Vérifier si les boutons du formulaire existent
+        if (vue.getBtnValider() != null) {
+            // Supprimer tous les écouteurs existants pour éviter les doublons
+            for (ActionListener al : vue.getBtnValider().getActionListeners()) {
+                vue.getBtnValider().removeActionListener(al);
+            }
+
+            // Ajouter le nouvel écouteur
+            vue.getBtnValider().addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    System.out.println("Bouton Valider cliqué - appel à validerFormulaire()");
+                    validerFormulaire();
+                }
+            });
+        }
+
+        if (vue.getBtnAnnuler() != null) {
+            // Supprimer tous les écouteurs existants pour éviter les doublons
+            for (ActionListener al : vue.getBtnAnnuler().getActionListeners()) {
+                vue.getBtnAnnuler().removeActionListener(al);
+            }
+
+            // Ajouter le nouvel écouteur
+            vue.getBtnAnnuler().addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    System.out.println("Bouton Annuler cliqué - fermeture du formulaire");
+                    if (vue.getDialogFormulaire() != null) {
+                        vue.getDialogFormulaire().dispose();
+                    }
+                }
+            });
+        }
+    }
     /**
      * Exporte les rendez-vous au format Excel.
      */

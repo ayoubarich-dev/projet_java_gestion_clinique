@@ -1,7 +1,7 @@
 package fr.clinique.view;
 
 import fr.clinique.model.*;
-import fr.clinique.controller.ControleurSecretaire;
+import fr.clinique.controller.*;
 import fr.clinique.observer.NotificationManager;
 
 import javax.swing.*;
@@ -23,6 +23,12 @@ public class VuePrincipale extends JFrame {
     private JMenuItem miAfficherMessages;
     private JTextArea zoneNotifications;
     private JPanel contentPanel;
+
+    // Stocker les contrôleurs actifs
+    private ControleurPatient controleurPatient;
+    private ControleurMedecin controleurMedecin;
+    private ControleurSecretaire controleurSecretaire;
+    private ControleurRendezVous controleurRendezVous;
 
     public VuePrincipale(Utilisateur utilisateur) {
         this.utilisateur = utilisateur;
@@ -299,6 +305,7 @@ public class VuePrincipale extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 logout();
+
             }
         });
 
@@ -363,39 +370,118 @@ public class VuePrincipale extends JFrame {
     // Méthodes pour changer le contenu du panneau principal
     private void showPatientList() {
         contentPanel.removeAll();
-        VuePatient vuePatient = new VuePatient(utilisateur);
-        contentPanel.add(vuePatient, BorderLayout.CENTER);
-        contentPanel.revalidate();
-        contentPanel.repaint();
+
+        try {
+            // Créer la vue
+            VuePatient vuePatient = new VuePatient(utilisateur);
+
+            // Créer et stocker le contrôleur
+            controleurPatient = new ControleurPatient(vuePatient);
+
+            // S'assurer que le contrôleur attache correctement les écouteurs aux boutons du formulaire
+            // Cette méthode doit être ajoutée à ControleurPatient
+            controleurPatient.getClass().getDeclaredMethod("attacherEcouteursFormulaire").invoke(controleurPatient);
+
+            // Ajouter la vue au panneau
+            contentPanel.add(vuePatient, BorderLayout.CENTER);
+            contentPanel.revalidate();
+            contentPanel.repaint();
+
+            System.out.println("Vue patient affichée et contrôleur initialisé");
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'initialisation de la vue patient: " + e.getMessage());
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Erreur lors de l'initialisation de la vue patient: " + e.getMessage(),
+                    "Erreur",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void showAddPatientForm() {
-        // Pour des formulaires simples, on peut utiliser directement un dialogue plutôt qu'une vue complète
-        showPatientList(); // Afficher la liste puis ouvrir le formulaire d'ajout
+        // Vérifier si la vue patient est déjà affichée, sinon l'afficher
+        if (contentPanel.getComponentCount() == 0 || !(contentPanel.getComponent(0) instanceof VuePatient)) {
+            showPatientList();
+        }
+
+        // Récupérer la vue patient
         VuePatient vuePatient = (VuePatient) contentPanel.getComponent(0);
+
+        // Afficher le formulaire d'ajout
         vuePatient.afficherFormulaireAjout();
+
+        System.out.println("Formulaire d'ajout de patient affiché");
     }
 
     private void showMedecinList() {
         contentPanel.removeAll();
-        VueMedecin vueMedecin = new VueMedecin(utilisateur);
-        contentPanel.add(vueMedecin, BorderLayout.CENTER);
-        contentPanel.revalidate();
-        contentPanel.repaint();
+
+        try {
+            // Créer la vue
+            VueMedecin vueMedecin = new VueMedecin(utilisateur);
+
+            // Créer et stocker le contrôleur
+            controleurMedecin = new ControleurMedecin(vueMedecin);
+
+            // S'assurer que le contrôleur attache correctement les écouteurs aux boutons du formulaire
+            // Cette méthode doit être ajoutée à ControleurMedecin
+            controleurMedecin.getClass().getDeclaredMethod("attacherEcouteursFormulaire").invoke(controleurMedecin);
+
+            // Ajouter la vue au panneau
+            contentPanel.add(vueMedecin, BorderLayout.CENTER);
+            contentPanel.revalidate();
+            contentPanel.repaint();
+
+            System.out.println("Vue médecin affichée et contrôleur initialisé");
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'initialisation de la vue médecin: " + e.getMessage());
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Erreur lors de l'initialisation de la vue médecin: " + e.getMessage(),
+                    "Erreur",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void showAddMedecinForm() {
-        showMedecinList(); // Afficher la liste puis ouvrir le formulaire d'ajout
+        // Vérifier si la vue médecin est déjà affichée, sinon l'afficher
+        if (contentPanel.getComponentCount() == 0 || !(contentPanel.getComponent(0) instanceof VueMedecin)) {
+            showMedecinList();
+        }
+
+        // Récupérer la vue médecin
         VueMedecin vueMedecin = (VueMedecin) contentPanel.getComponent(0);
+
+        // Afficher le formulaire d'ajout
         vueMedecin.afficherFormulaireAjout();
+
+        System.out.println("Formulaire d'ajout de médecin affiché");
     }
 
     private void showSecretaireList() {
         contentPanel.removeAll();
-        VueSecretaire vueSecretaire = new VueSecretaire(utilisateur);
-        contentPanel.add(vueSecretaire, BorderLayout.CENTER);
-        contentPanel.revalidate();
-        contentPanel.repaint();
+
+        try {
+            // Créer la vue
+            VueSecretaire vueSecretaire = new VueSecretaire(utilisateur);
+
+            // Créer et stocker le contrôleur
+            controleurSecretaire = new ControleurSecretaire(vueSecretaire);
+
+            // Ajouter la vue au panneau
+            contentPanel.add(vueSecretaire, BorderLayout.CENTER);
+            contentPanel.revalidate();
+            contentPanel.repaint();
+
+            System.out.println("Vue secrétaire affichée et contrôleur initialisé");
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'initialisation de la vue secrétaire: " + e.getMessage());
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Erreur lors de l'initialisation de la vue secrétaire: " + e.getMessage(),
+                    "Erreur",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     public void showAddSecretaireForm() {
@@ -498,7 +584,7 @@ public class VuePrincipale extends JFrame {
                     dialog.dispose();
 
                     // Rafraîchir la liste si elle est affichée
-                    if (contentPanel.getComponent(0) instanceof VueSecretaire) {
+                    if (contentPanel.getComponentCount() > 0 && contentPanel.getComponent(0) instanceof VueSecretaire) {
                         showSecretaireList();
                     }
                 } else {
@@ -523,20 +609,53 @@ public class VuePrincipale extends JFrame {
         dialog.add(panel, BorderLayout.CENTER);
         dialog.add(panelBoutons, BorderLayout.SOUTH);
         dialog.setVisible(true);
+
+        System.out.println("Formulaire d'ajout de secrétaire affiché");
     }
 
     private void showRendezVousList() {
         contentPanel.removeAll();
-        VueRendezVous vueRendezVous = new VueRendezVous(utilisateur);
-        contentPanel.add(vueRendezVous, BorderLayout.CENTER);
-        contentPanel.revalidate();
-        contentPanel.repaint();
+
+        try {
+            // Créer la vue
+            VueRendezVous vueRendezVous = new VueRendezVous(utilisateur);
+
+            // Créer et stocker le contrôleur
+            controleurRendezVous = new ControleurRendezVous(vueRendezVous);
+
+            // S'assurer que le contrôleur attache correctement les écouteurs aux boutons du formulaire
+            // Cette méthode doit être ajoutée à ControleurRendezVous
+            controleurRendezVous.getClass().getDeclaredMethod("attacherEcouteursFormulaire").invoke(controleurRendezVous);
+
+            // Ajouter la vue au panneau
+            contentPanel.add(vueRendezVous, BorderLayout.CENTER);
+            contentPanel.revalidate();
+            contentPanel.repaint();
+
+            System.out.println("Vue rendez-vous affichée et contrôleur initialisé");
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'initialisation de la vue rendez-vous: " + e.getMessage());
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Erreur lors de l'initialisation de la vue rendez-vous: " + e.getMessage(),
+                    "Erreur",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void showAddRendezVousForm() {
-        showRendezVousList(); // Afficher la liste puis ouvrir le formulaire d'ajout
+        // Vérifier si la vue rendez-vous est déjà affichée, sinon l'afficher
+        if (contentPanel.getComponentCount() == 0 || !(contentPanel.getComponent(0) instanceof VueRendezVous)) {
+            showRendezVousList();
+        }
+
+        // Récupérer la vue rendez-vous
         VueRendezVous vueRendezVous = (VueRendezVous) contentPanel.getComponent(0);
+
+        // Afficher le formulaire d'ajout
         vueRendezVous.afficherFormulaireAjout();
+
+        System.out.println("Formulaire d'ajout de rendez-vous affiché");
     }
 
     private void exportRendezVousToExcel() {

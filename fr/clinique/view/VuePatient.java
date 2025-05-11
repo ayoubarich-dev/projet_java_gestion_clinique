@@ -7,6 +7,8 @@ import fr.clinique.model.Utilisateur;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.SimpleDateFormat;
@@ -205,14 +207,30 @@ public class VuePatient extends JPanel {
             tfTelephone = new JTextField(20);
             panel.add(tfTelephone, gbc);
 
-            // Boutons
             JPanel panelBoutons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
             btnValider = new JButton("Valider");
             btnAnnuler = new JButton("Annuler");
 
+            // Ajout de débogage sur les boutons
+            btnValider.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    System.out.println("DEBUG: Bouton Valider du formulaire patient cliqué");
+                }
+            });
+
+            btnAnnuler.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    System.out.println("DEBUG: Bouton Annuler du formulaire patient cliqué");
+                    if (dialogFormulaire != null) {
+                        dialogFormulaire.dispose();
+                    }
+                }
+            });
+
             panelBoutons.add(btnValider);
             panelBoutons.add(btnAnnuler);
-
             dialogFormulaire.add(panel, BorderLayout.CENTER);
             dialogFormulaire.add(panelBoutons, BorderLayout.SOUTH);
         }

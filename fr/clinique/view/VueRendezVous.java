@@ -9,6 +9,8 @@ import fr.clinique.model.Utilisateur;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.text.SimpleDateFormat;
@@ -229,10 +231,27 @@ public class VueRendezVous extends JPanel {
             tfMotif = new JTextField();
             panel.add(tfMotif, gbc);
 
-            // Boutons
             JPanel panelBoutons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
             btnValider = new JButton("Valider");
             btnAnnuler = new JButton("Annuler");
+
+            // Ajout de débogage sur les boutons
+            btnValider.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    System.out.println("DEBUG: Bouton Valider du formulaire rendez-vous cliqué");
+                }
+            });
+
+            btnAnnuler.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    System.out.println("DEBUG: Bouton Annuler du formulaire rendez-vous cliqué");
+                    if (dialogFormulaire != null) {
+                        dialogFormulaire.dispose();
+                    }
+                }
+            });
 
             panelBoutons.add(btnValider);
             panelBoutons.add(btnAnnuler);
