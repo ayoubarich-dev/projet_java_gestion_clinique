@@ -117,6 +117,8 @@ public class VuePatient extends JPanel {
 
         dialogFormulaire.setTitle("Ajouter un patient");
         dialogFormulaire.setVisible(true);
+
+        System.out.println("Formulaire d'ajout de patient affiché");
     }
 
     public void afficherFormulaireModification(int id) {
@@ -134,6 +136,8 @@ public class VuePatient extends JPanel {
 
                 dialogFormulaire.setTitle("Modifier un patient");
                 dialogFormulaire.setVisible(true);
+
+                System.out.println("Formulaire de modification de patient affiché");
                 return;
             }
         }
@@ -146,6 +150,8 @@ public class VuePatient extends JPanel {
 
     private void creerFormulaire() {
         if (dialogFormulaire == null) {
+            System.out.println("Création du formulaire patient");
+
             // Créer la boîte de dialogue une seule fois
             Window window = SwingUtilities.getWindowAncestor(this);
             if (window instanceof JFrame) {
@@ -207,32 +213,30 @@ public class VuePatient extends JPanel {
             tfTelephone = new JTextField(20);
             panel.add(tfTelephone, gbc);
 
+            // Boutons
             JPanel panelBoutons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
             btnValider = new JButton("Valider");
             btnAnnuler = new JButton("Annuler");
 
-            // Ajout de débogage sur les boutons
-            btnValider.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    System.out.println("DEBUG: Bouton Valider du formulaire patient cliqué");
-                }
-            });
-
-            btnAnnuler.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    System.out.println("DEBUG: Bouton Annuler du formulaire patient cliqué");
-                    if (dialogFormulaire != null) {
-                        dialogFormulaire.dispose();
-                    }
-                }
-            });
+            // Debug des boutons
+            System.out.println("Création des boutons du formulaire patient");
+            System.out.println("btnValider: " + (btnValider != null ? "OK" : "NULL"));
+            System.out.println("btnAnnuler: " + (btnAnnuler != null ? "OK" : "NULL"));
 
             panelBoutons.add(btnValider);
             panelBoutons.add(btnAnnuler);
+
             dialogFormulaire.add(panel, BorderLayout.CENTER);
             dialogFormulaire.add(panelBoutons, BorderLayout.SOUTH);
+        }
+
+        // S'assurer que les boutons sont visibles
+        if (btnValider != null) {
+            btnValider.setVisible(true);
+        }
+
+        if (btnAnnuler != null) {
+            btnAnnuler.setVisible(true);
         }
     }
 

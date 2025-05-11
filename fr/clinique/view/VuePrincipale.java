@@ -378,9 +378,8 @@ public class VuePrincipale extends JFrame {
             // Créer et stocker le contrôleur
             controleurPatient = new ControleurPatient(vuePatient);
 
-            // S'assurer que le contrôleur attache correctement les écouteurs aux boutons du formulaire
-            // Cette méthode doit être ajoutée à ControleurPatient
-            controleurPatient.getClass().getDeclaredMethod("attacherEcouteursFormulaire").invoke(controleurPatient);
+            // Appeler directement la méthode publique
+            controleurPatient.attacherEcouteursFormulaire();
 
             // Ajouter la vue au panneau
             contentPanel.add(vuePatient, BorderLayout.CENTER);
@@ -413,19 +412,24 @@ public class VuePrincipale extends JFrame {
         System.out.println("Formulaire d'ajout de patient affiché");
     }
 
+
     private void showMedecinList() {
         contentPanel.removeAll();
 
         try {
+            System.out.println("Initialisation de la vue médecin...");
+
             // Créer la vue
             VueMedecin vueMedecin = new VueMedecin(utilisateur);
 
             // Créer et stocker le contrôleur
             controleurMedecin = new ControleurMedecin(vueMedecin);
 
-            // S'assurer que le contrôleur attache correctement les écouteurs aux boutons du formulaire
-            // Cette méthode doit être ajoutée à ControleurMedecin
-            controleurMedecin.getClass().getDeclaredMethod("attacherEcouteursFormulaire").invoke(controleurMedecin);
+            // Appeler directement la méthode publique
+            // si elle existe dans le contrôleur
+            if (controleurMedecin != null) {
+                controleurMedecin.attacherEcouteursFormulaire();
+            }
 
             // Ajouter la vue au panneau
             contentPanel.add(vueMedecin, BorderLayout.CENTER);
@@ -444,18 +448,36 @@ public class VuePrincipale extends JFrame {
     }
 
     private void showAddMedecinForm() {
-        // Vérifier si la vue médecin est déjà affichée, sinon l'afficher
-        if (contentPanel.getComponentCount() == 0 || !(contentPanel.getComponent(0) instanceof VueMedecin)) {
-            showMedecinList();
+        try {
+            // Vérifier si la vue médecin est déjà affichée, sinon l'afficher
+            if (contentPanel.getComponentCount() == 0 || !(contentPanel.getComponent(0) instanceof VueMedecin)) {
+                showMedecinList();
+            }
+
+            // Récupérer la vue médecin
+            if (contentPanel.getComponent(0) instanceof VueMedecin) {
+                VueMedecin vueMedecin = (VueMedecin) contentPanel.getComponent(0);
+
+                // Afficher le formulaire d'ajout
+                vueMedecin.afficherFormulaireAjout();
+
+                // Réattacher les écouteurs aux boutons du formulaire
+                if (controleurMedecin != null) {
+                    controleurMedecin.attacherEcouteursFormulaire();
+                }
+
+                System.out.println("Formulaire d'ajout de médecin affiché");
+            } else {
+                System.err.println("Impossible de récupérer la vue médecin");
+            }
+        } catch (Exception e) {
+            System.err.println("Erreur lors de l'affichage du formulaire d'ajout médecin: " + e.getMessage());
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Erreur lors de l'affichage du formulaire d'ajout médecin: " + e.getMessage(),
+                    "Erreur",
+                    JOptionPane.ERROR_MESSAGE);
         }
-
-        // Récupérer la vue médecin
-        VueMedecin vueMedecin = (VueMedecin) contentPanel.getComponent(0);
-
-        // Afficher le formulaire d'ajout
-        vueMedecin.afficherFormulaireAjout();
-
-        System.out.println("Formulaire d'ajout de médecin affiché");
     }
 
     private void showSecretaireList() {

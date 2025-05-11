@@ -7,8 +7,6 @@ import fr.clinique.model.Utilisateur;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
@@ -83,26 +81,13 @@ public class VueMedecin extends JPanel {
             btnSupprimer.setEnabled(false);
             btnModifier.setEnabled(false);
         }
-
-        // Double-clic sur une ligne du tableau
-        tableMedecins.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int selectedRow = tableMedecins.getSelectedRow();
-                    if (selectedRow >= 0 && utilisateur.getRole() == Role.ADMINISTRATEUR) {
-                        idMedecinSelectionne = (int) tableMedecins.getValueAt(selectedRow, 0);
-                        afficherFormulaireModification(idMedecinSelectionne);
-                    }
-                }
-            }
-        });
     }
 
     // Méthodes d'affichage et de mise à jour
     public void afficherDonnees(List<Medecin> medecins) {
+        System.out.println("Affichage des données médecins: " + medecins.size() + " médecins");
         modelTable.setRowCount(0);
-        
+
         for (Medecin medecin : medecins) {
             modelTable.addRow(new Object[] {
                     medecin.getId(),
@@ -115,8 +100,11 @@ public class VueMedecin extends JPanel {
     }
 
     public void afficherFormulaireAjout() {
+        System.out.println("Affichage du formulaire d'ajout médecin");
         modeAjout = true;
         creerFormulaire();
+
+        // Vider les champs
         tfNom.setText("");
         tfPrenom.setText("");
         tfSpecialite.setText("");
@@ -129,9 +117,12 @@ public class VueMedecin extends JPanel {
 
         dialogFormulaire.setTitle("Ajouter un médecin");
         dialogFormulaire.setVisible(true);
+
+        System.out.println("Formulaire d'ajout médecin affiché");
     }
 
     public void afficherFormulaireModification(int id) {
+        System.out.println("Affichage du formulaire de modification médecin pour id=" + id);
         modeAjout = false;
 
         // Rechercher le médecin dans le tableau
@@ -149,6 +140,8 @@ public class VueMedecin extends JPanel {
 
                 dialogFormulaire.setTitle("Modifier un médecin");
                 dialogFormulaire.setVisible(true);
+
+                System.out.println("Formulaire de modification médecin affiché");
                 return;
             }
         }
@@ -160,6 +153,7 @@ public class VueMedecin extends JPanel {
     }
 
     private void creerFormulaire() {
+        System.out.println("Création du formulaire médecin");
         if (dialogFormulaire == null) {
             // Créer la boîte de dialogue une seule fois
             Window window = SwingUtilities.getWindowAncestor(this);
@@ -256,33 +250,29 @@ public class VueMedecin extends JPanel {
             panelFormulaire.add(panelLogin, BorderLayout.NORTH);
             panelFormulaire.add(panelInfo, BorderLayout.CENTER);
 
+            // Boutons
             JPanel panelBoutons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
             btnValider = new JButton("Valider");
             btnAnnuler = new JButton("Annuler");
 
-            // Ajout de débogage sur les boutons
-            btnValider.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    System.out.println("DEBUG: Bouton Valider du formulaire médecin cliqué");
-                }
-            });
-
-            btnAnnuler.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    System.out.println("DEBUG: Bouton Annuler du formulaire médecin cliqué");
-                    if (dialogFormulaire != null) {
-                        dialogFormulaire.dispose();
-                    }
-                }
-            });
+            System.out.println("Création des boutons du formulaire médecin");
+            System.out.println("btnValider créé: " + (btnValider != null));
+            System.out.println("btnAnnuler créé: " + (btnAnnuler != null));
 
             panelBoutons.add(btnValider);
             panelBoutons.add(btnAnnuler);
 
             dialogFormulaire.add(panelFormulaire, BorderLayout.CENTER);
             dialogFormulaire.add(panelBoutons, BorderLayout.SOUTH);
+        }
+
+        // S'assurer que les boutons sont visibles
+        if (btnValider != null) {
+            btnValider.setVisible(true);
+        }
+
+        if (btnAnnuler != null) {
+            btnAnnuler.setVisible(true);
         }
     }
 
@@ -299,7 +289,7 @@ public class VueMedecin extends JPanel {
     public Utilisateur getUtilisateur() {
         return utilisateur;
     }
-    
+
     public JTable getTableMedecins() {
         return tableMedecins;
     }

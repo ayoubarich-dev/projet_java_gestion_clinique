@@ -8,10 +8,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 public class DatabaseConnexion {
-    private static final String URL = "jdbc:mysql://localhost:3306/clinique_db"; // Remplacez par le bon nom de base
+    private static final String URL = "jdbc:mysql://localhost:3306/clinique_db?useSSL=false&serverTimezone=UTC"; // URL avec paramètres supplémentaires
     private static final String USER = "root"; // Nom d'utilisateur MySQL
     private static final String PASSWORD = ""; // Mot de passe MySQL
-    private static final int MAX_TIMEOUT = 3; // Timeout en secondes pour vérifier si la connexion est valide
+    private static final int MAX_TIMEOUT = 5; // Timeout en secondes pour vérifier si la connexion est valide
 
     private static Connection connexion;
 
@@ -46,7 +46,10 @@ public class DatabaseConnexion {
         return connexion;
     }
 
-
+    /**
+     * Vérifie si la connexion actuelle est valide.
+     * @return true si la connexion est valide, false sinon
+     */
     private static boolean isConnectionValid() {
         try {
             if (connexion == null) {

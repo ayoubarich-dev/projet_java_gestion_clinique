@@ -131,12 +131,16 @@ public class Medecin extends Utilisateur implements Observer {
      * Enregistre le médecin dans la base de données.
      * @return true si l'enregistrement a réussi, false sinon
      */
-    @Override
+
+
     public boolean enregistrer() {
+        System.out.println("Début de la méthode enregistrer() pour le médecin");
+
         // D'abord enregistrer les informations de l'utilisateur
         boolean userSaved = super.enregistrer();
 
         if (!userSaved) {
+            System.err.println("Échec de l'enregistrement de l'utilisateur du médecin");
             return false;
         }
 
@@ -149,30 +153,43 @@ public class Medecin extends Utilisateur implements Observer {
             checkPs.setInt(1, getId());
             ResultSet rs = checkPs.executeQuery();
 
+            boolean result;
             if (rs.next()) {
                 // Médecin existe, faire une mise à jour
+                System.out.println("Mise à jour du médecin existant avec id_utilisateur=" + getId());
                 String updateQuery = "UPDATE medecins SET specialite = ?, horaires = ? WHERE id_utilisateur = ?";
                 PreparedStatement updatePs = connection.prepareStatement(updateQuery);
                 updatePs.setString(1, specialite);
                 updatePs.setString(2, horaires);
                 updatePs.setInt(3, getId());
 
-                int result = updatePs.executeUpdate();
+                result = updatePs.executeUpdate() > 0;
                 updatePs.close();
-                return result > 0;
             } else {
                 // Nouveau médecin, faire une insertion
+                System.out.println("Insertion d'un nouveau médecin avec id_utilisateur=" + getId());
                 String insertQuery = "INSERT INTO medecins (id_utilisateur, specialite, horaires) VALUES (?, ?, ?)";
                 PreparedStatement insertPs = connection.prepareStatement(insertQuery);
                 insertPs.setInt(1, getId());
                 insertPs.setString(2, specialite);
                 insertPs.setString(3, horaires);
 
-                int result = insertPs.executeUpdate();
+                result = insertPs.executeUpdate() > 0;
                 insertPs.close();
-                return result > 0;
             }
+
+            rs.close();
+            checkPs.close();
+
+            if (result) {
+                System.out.println("Médecin enregistré avec succès");
+            } else {
+                System.err.println("Échec de l'enregistrement du médecin dans la table medecins");
+            }
+
+            return result;
         } catch (SQLException e) {
+            System.err.println("Erreur SQL lors de l'enregistrement du médecin: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
