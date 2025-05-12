@@ -5,10 +5,7 @@ import fr.clinique.observer.NotificationManager;
 
 import java.sql.*;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Classe représentant un médecin.
@@ -18,8 +15,8 @@ public class Medecin extends Utilisateur implements Observer {
     private String specialite;
     private String horaires;
 
-    // Map pour stocker les messages par médecin (clé = ID du médecin)
-    private static Map<Integer, List<String>> messagesParMedecin = new HashMap<>();
+    // Map pour stocker les messages par médecin avec un Set pour éviter les doublons
+    private static Map<Integer, Set<String>> messagesParMedecin = new HashMap<>();
 
     /**
      * Constructeur par défaut.
@@ -60,7 +57,6 @@ public class Medecin extends Utilisateur implements Observer {
         this.horaires = horaires;
     }
 
-    // Getters et setters
     /**
      * Obtient la spécialité du médecin.
      * @return La spécialité
@@ -117,7 +113,7 @@ public class Medecin extends Utilisateur implements Observer {
                     " le " + sdf.format(rendezVous.getDate()) +
                     " à " + rendezVous.getHeure();
 
-            // Stocker le message pour ce médecin
+            // Stocker le message pour ce médecin (pas de doublon grâce au Set)
             ajouterMessagePourMedecin(this.id, message);
 
             // Utiliser le gestionnaire de notifications pour l'UI
@@ -391,15 +387,15 @@ public class Medecin extends Utilisateur implements Observer {
     }
 
     /**
-     * Ajoute un message pour un médecin.
+     * Ajoute un message pour un médecin (évite les doublons avec Set).
      * @param idMedecin L'identifiant du médecin
      * @param message Le message à ajouter
      */
     public static void ajouterMessagePourMedecin(int idMedecin, String message) {
         if (!messagesParMedecin.containsKey(idMedecin)) {
-            messagesParMedecin.put(idMedecin, new ArrayList<>());
+            messagesParMedecin.put(idMedecin, new LinkedHashSet<String>()); // LinkedHashSet pour garder l'ordre
         }
-        messagesParMedecin.get(idMedecin).add(message);
+        messagesParMedecin.get(idMedecin).add(message); // Le Set évite automatiquement les doublons
     }
 
     /**

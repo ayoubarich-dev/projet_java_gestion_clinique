@@ -136,6 +136,8 @@ public class RendezVous implements Model<RendezVous> {
         }
     }
 
+
+    // Dans la classe RendezVous.java - méthode enregistrer()
     @Override
     public boolean enregistrer() {
         Connection connection = DatabaseConnexion.getConnexion();
@@ -145,7 +147,7 @@ public class RendezVous implements Model<RendezVous> {
                 String query = "INSERT INTO rendez_vous (id_patient, id_medecin, date, heure, motif) VALUES (?, ?, ?, ?, ?)";
                 PreparedStatement ps = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
                 ps.setInt(1, this.patient.getId());
-                ps.setInt(2, this.medecin.getId()); // ID de l'utilisateur médecin
+                ps.setInt(2, this.medecin.getId());
                 ps.setDate(3, new java.sql.Date(this.date.getTime()));
                 ps.setString(4, this.heure);
                 ps.setString(5, this.motif);
@@ -159,8 +161,10 @@ public class RendezVous implements Model<RendezVous> {
                     }
                     rs.close();
 
-                    // Notifier les observateurs pour les nouveaux rendez-vous
-                    this.ajouterObservateur(this.medecin);
+                    // CORRECTION: Vérifier si le médecin n'est pas déjà observateur avant de l'ajouter
+                    if (!observateurs.contains(this.medecin)) {
+                        this.ajouterObservateur(this.medecin);
+                    }
                     this.notifierObservateurs();
                 }
 
@@ -171,7 +175,7 @@ public class RendezVous implements Model<RendezVous> {
                 String query = "UPDATE rendez_vous SET id_patient = ?, id_medecin = ?, date = ?, heure = ?, motif = ? WHERE id = ?";
                 PreparedStatement ps = connection.prepareStatement(query);
                 ps.setInt(1, this.patient.getId());
-                ps.setInt(2, this.medecin.getId()); // ID de l'utilisateur médecin
+                ps.setInt(2, this.medecin.getId());
                 ps.setDate(3, new java.sql.Date(this.date.getTime()));
                 ps.setString(4, this.heure);
                 ps.setString(5, this.motif);
@@ -454,45 +458,11 @@ public class RendezVous implements Model<RendezVous> {
         System.out.println("Patient trouvé: " + patient.getNom() + " " + patient.getPrenom());
         System.out.println("Médecin trouvé: " + medecin.getNom() + " " + medecin.getPrenom());
 
-        Connection connection = DatabaseConnexion.getConnexion();
-        try {
-            String query = "INSERT INTO rendez_vous (id_patient, id_medecin, date, heure, motif) VALUES (?, ?, ?, ?, ?)";
-            PreparedStatement ps = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
-            ps.setInt(1, idPatient);
-            ps.setInt(2, idMedecin); // Utiliser directement l'ID utilisateur du médecin
-            ps.setDate(3, new java.sql.Date(date.getTime()));
-            ps.setString(4, heure);
-            ps.setString(5, motif);
+        // Créer le rendez-vous
+        RendezVous rendezVous = new RendezVous(patient, medecin, date, heure, motif);
 
-            System.out.println("Exécution de la requête d'insertion...");
-            int result = ps.executeUpdate();
-
-            if (result > 0) {
-                ResultSet generatedKeys = ps.getGeneratedKeys();
-                if (generatedKeys.next()) {
-                    int newId = generatedKeys.getInt(1);
-                    System.out.println("Rendez-vous créé avec l'ID: " + newId);
-                }
-                generatedKeys.close();
-
-                // Notifier le médecin
-                RendezVous rendezVous = new RendezVous(patient, medecin, date, heure, motif);
-                rendezVous.ajouterObservateur(medecin);
-                rendezVous.notifierObservateurs();
-
-                ps.close();
-                System.out.println("Rendez-vous ajouté avec succès");
-                return true;
-            } else {
-                System.err.println("Aucune ligne insérée");
-                ps.close();
-                return false;
-            }
-        } catch (SQLException e) {
-            System.err.println("Erreur SQL lors de l'ajout du rendez-vous: " + e.getMessage());
-            e.printStackTrace();
-        }
-        return false;
+        // Enregistrer (la notification sera gérée dans la méthode enregistrer)
+        return rendezVous.enregistrer();
     }
 
     /**

@@ -28,6 +28,19 @@ public class NotificationManager {
         // Constructeur privé
     }
 
+    public boolean notificationExiste(String message) {
+        for (String notification : notifications) {
+            // Extraire le message sans le timestamp pour la comparaison
+            if (notification.contains("] ")) {
+                String msgSansTimestamp = notification.substring(notification.indexOf("] ") + 2);
+                if (msgSansTimestamp.equals(message)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     /**
      * Retourne l'instance unique du gestionnaire de notifications.
      * Si l'instance n'existe pas, elle est créée.
@@ -53,6 +66,12 @@ public class NotificationManager {
      * @param message Le message de la notification
      */
     public void ajouterNotification(String message) {
+        // Vérifier si la notification existe déjà
+        if (notificationExiste(message)) {
+            System.out.println("Notification déjà existante, ignorée: " + message);
+            return;
+        }
+
         // Obtenir la date et l'heure actuelles
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
         String timestamp = sdf.format(new Date());
@@ -66,19 +85,10 @@ public class NotificationManager {
         // Afficher dans la zone de notifications si disponible
         if (zoneNotifications != null) {
             SwingUtilities.invokeLater(() -> {
-                // Sauvegarde de la couleur actuelle
                 Color oldColor = zoneNotifications.getForeground();
-
-                // Change la couleur pour la notification
                 zoneNotifications.setForeground(Color.BLUE);
-
-                // Ajoute le texte
                 zoneNotifications.append(notificationComplete + "\n");
-
-                // Restaure la couleur d'origine
                 zoneNotifications.setForeground(oldColor);
-
-                // Défiler automatiquement vers le bas
                 zoneNotifications.setCaretPosition(zoneNotifications.getDocument().getLength());
             });
         }
@@ -86,6 +96,7 @@ public class NotificationManager {
         // Afficher aussi dans la console (pour débogage)
         System.out.println("NOTIFICATION: " + notificationComplete);
     }
+
 
     /**
      * Retourne la liste des notifications.

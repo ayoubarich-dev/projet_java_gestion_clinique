@@ -329,23 +329,38 @@ public class ControleurRendezVous {
     }
 
     // Méthodes de gestion des rendez-vous
+    // Dans la classe ControleurRendezVous.java - méthode ajouterRendezVous()
     public boolean ajouterRendezVous(int idPatient, int idMedecin, Date date, String heure, String motif) {
         boolean result = RendezVous.ajouterRendezVous(idPatient, idMedecin, date, heure, motif);
 
         if (result) {
-            // Notifier les changements
+            // Récupérer les entités pour la notification
             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
             Patient patient = Patient.getPatientById(idPatient);
             Medecin medecin = Medecin.getMedecinById(idMedecin);
 
             if (patient != null && medecin != null) {
-                // Ajouter un message spécifique pour ce médecin
+                // Message spécifique pour le médecin (éviter les doublons)
                 String messageSpecifique = "Nouveau patient affecté: " +
                         patient.getPrenom() + " " + patient.getNom() +
                         " le " + sdf.format(date) + " à " + heure;
-                Medecin.ajouterMessagePourMedecin(medecin.getId(), messageSpecifique);
 
-                // Notification générale
+                // S'assurer qu'on n'ajoute pas deux fois le même message
+                List<String> messagesExistants = Medecin.getMessagesPourMedecin(medecin.getId());
+                boolean messageDejaPresent = false;
+
+                for (String msg : messagesExistants) {
+                    if (msg.equals(messageSpecifique)) {
+                        messageDejaPresent = true;
+                        break;
+                    }
+                }
+
+                if (!messageDejaPresent) {
+                    Medecin.ajouterMessagePourMedecin(medecin.getId(), messageSpecifique);
+                }
+
+                // Notification générale (une seule fois)
                 NotificationManager.getInstance().ajouterNotification(
                         "Nouveau rendez-vous créé pour le Dr. " + medecin.getPrenom() + " " +
                                 medecin.getNom() + " avec " + patient.getPrenom() + " " +

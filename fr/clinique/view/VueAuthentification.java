@@ -10,11 +10,10 @@ public class VueAuthentification extends JFrame {
     private JTextField tfLogin;
     private JPasswordField pfPassword;
     private JButton btnConnexion;
-    private ControleurAuthentification controleur;
+
 
     public VueAuthentification() {
         initUI();
-        this.controleur = new ControleurAuthentification(this);
     }
 
     private void initUI() {
@@ -118,5 +117,5 @@ public class VueAuthentification extends JFrame {
         this.setVisible(true);
     }
 
-    
+
 }
