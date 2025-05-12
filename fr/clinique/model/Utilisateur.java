@@ -12,10 +12,6 @@ public class Utilisateur extends Personne {
     private String login;
     private String password;
     private Role role;
-
-    /**
-     * Constructeur par défaut.
-     */
     public Utilisateur() {
         super();
     }

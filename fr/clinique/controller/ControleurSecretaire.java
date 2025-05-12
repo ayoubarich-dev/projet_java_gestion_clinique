@@ -44,6 +44,33 @@ public class ControleurSecretaire {
      * Ajoute les écouteurs d'événements aux composants de la vue.
      */
     private void ajouterEcouteurs() {
+        // Bouton Ajouter
+        vue.getBtnAjouter().addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                vue.afficherFormulaireAjout();
+            }
+        });
+
+        // Bouton Modifier
+        vue.getBtnModifier().addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int selectedRow = vue.getTableSecretaires().getSelectedRow();
+                if (selectedRow >= 0) {
+                    int id = (int) vue.getModelTable().getValueAt(selectedRow, 0);
+
+                    // Appeler la méthode de VuePrincipale pour afficher le formulaire
+                    java.awt.Window window = SwingUtilities.getWindowAncestor(vue);
+                    if (window instanceof VuePrincipale) {
+                        ((VuePrincipale) window).showEditSecretaireForm(id);
+                    }
+                } else {
+                    vue.afficherMessage("Veuillez sélectionner un secrétaire à modifier", "Aucune sélection", JOptionPane.WARNING_MESSAGE);
+                }
+            }
+        });
+
         // Bouton Supprimer
         vue.getBtnSupprimer().addActionListener(new ActionListener() {
             @Override
@@ -76,18 +103,6 @@ public class ControleurSecretaire {
             @Override
             public void actionPerformed(ActionEvent e) {
                 chargerDonnees();
-            }
-        });
-
-        // Bouton Ajouter - redirige vers la vue principale pour afficher le formulaire d'ajout
-        vue.getBtnAjouter().addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // Ce bouton est géré par la VuePrincipale
-                java.awt.Window window = SwingUtilities.getWindowAncestor(vue);
-                if (window instanceof VuePrincipale) {
-                    ((VuePrincipale) window).showAddSecretaireForm();
-                }
             }
         });
     }

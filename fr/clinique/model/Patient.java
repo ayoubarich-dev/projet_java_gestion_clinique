@@ -51,50 +51,26 @@ public class Patient extends Personne {
     }
 
     // Getters et setters
-    /**
-     * Obtient la date de naissance du patient.
-     * @return La date de naissance
-     */
     public Date getDateNaissance() {
         return dateNaissance;
     }
 
-    /**
-     * Définit la date de naissance du patient.
-     * @param dateNaissance La nouvelle date de naissance
-     */
     public void setDateNaissance(Date dateNaissance) {
         this.dateNaissance = dateNaissance;
     }
 
-    /**
-     * Obtient le numéro de téléphone du patient.
-     * @return Le numéro de téléphone
-     */
     public String getTelephone() {
         return telephone;
     }
 
-    /**
-     * Définit le numéro de téléphone du patient.
-     * @param telephone Le nouveau numéro de téléphone
-     */
     public void setTelephone(String telephone) {
         this.telephone = telephone;
     }
 
-    /**
-     * Obtient le numéro de dossier du patient.
-     * @return Le numéro de dossier
-     */
     public String getNumeroDossier() {
         return numeroDossier;
     }
 
-    /**
-     * Définit le numéro de dossier du patient.
-     * @param numeroDossier Le nouveau numéro de dossier
-     */
     public void setNumeroDossier(String numeroDossier) {
         this.numeroDossier = numeroDossier;
     }
@@ -105,13 +81,12 @@ public class Patient extends Personne {
      */
     @Override
     public String toString() {
-        return prenom + " " + nom;
+        // Vérifier que les attributs ne sont pas null
+        String prenomStr = (prenom != null) ? prenom : "";
+        String nomStr = (nom != null) ? nom : "";
+        return prenomStr + " " + nomStr;
     }
 
-    /**
-     * Enregistre le patient dans la base de données.
-     * @return true si l'enregistrement a réussi, false sinon
-     */
     @Override
     public boolean enregistrer() {
         Connection connection = DatabaseConnexion.getConnexion();
@@ -164,10 +139,6 @@ public class Patient extends Personne {
         }
     }
 
-    /**
-     * Supprime le patient de la base de données.
-     * @return true si la suppression a réussi, false sinon
-     */
     @Override
     public boolean supprimer() {
         if (this.id == 0) return false;
@@ -187,10 +158,6 @@ public class Patient extends Personne {
         }
     }
 
-    /**
-     * Récupère tous les patients de la base de données.
-     * @return Liste de tous les patients
-     */
     @Override
     public List<Personne> afficherTous() {
         List<Personne> patients = new ArrayList<>();
@@ -220,11 +187,6 @@ public class Patient extends Personne {
         return patients;
     }
 
-    /**
-     * Recherche un patient par son identifiant.
-     * @param id L'identifiant du patient à rechercher
-     * @return Le patient trouvé ou null si aucun patient ne correspond
-     */
     @Override
     public Personne rechercherParId(int id) {
         Connection connection = DatabaseConnexion.getConnexion();
@@ -256,11 +218,6 @@ public class Patient extends Personne {
         return null;
     }
 
-    /**
-     * Recherche un patient par son numéro de dossier.
-     * @param numeroDossier Le numéro de dossier du patient à rechercher
-     * @return Le patient trouvé ou null si aucun patient ne correspond
-     */
     public static Patient rechercherParNumeroDossier(String numeroDossier) {
         Connection connection = DatabaseConnexion.getConnexion();
         String query = "SELECT * FROM patients WHERE numero_dossier = ?";
@@ -291,11 +248,6 @@ public class Patient extends Personne {
         return null;
     }
 
-    /**
-     * Récupère les patients suivis par un médecin.
-     * @param idMedecin L'identifiant du médecin
-     * @return Liste des patients suivis par le médecin
-     */
     public static List<Patient> getPatientsParMedecin(int idMedecin) {
         List<Patient> patients = new ArrayList<>();
         Connection connection = DatabaseConnexion.getConnexion();
@@ -329,10 +281,6 @@ public class Patient extends Personne {
         return patients;
     }
 
-    /**
-     * Récupère tous les patients de la base de données.
-     * @return Liste de tous les patients
-     */
     public static List<Patient> getAllPatients() {
         List<Patient> patients = new ArrayList<>();
         Patient patient = new Patient();
@@ -347,11 +295,6 @@ public class Patient extends Personne {
         return patients;
     }
 
-    /**
-     * Recherche un patient par son identifiant.
-     * @param id L'identifiant du patient
-     * @return Le patient trouvé ou null si aucun patient ne correspond
-     */
     public static Patient getPatientById(int id) {
         Patient patient = new Patient();
         Personne personne = patient.rechercherParId(id);
@@ -361,15 +304,6 @@ public class Patient extends Personne {
         return null;
     }
 
-    /**
-     * Modifie un patient existant.
-     * @param id L'identifiant du patient
-     * @param nom Le nouveau nom du patient
-     * @param prenom Le nouveau prénom du patient
-     * @param dateNaissance La nouvelle date de naissance du patient
-     * @param telephone Le nouveau numéro de téléphone du patient
-     * @return true si la modification a réussi, false sinon
-     */
     public static boolean modifierPatient(int id, String nom, String prenom, Date dateNaissance, String telephone) {
         Patient patient = getPatientById(id);
         if (patient == null) {

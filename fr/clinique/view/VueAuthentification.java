@@ -10,9 +10,11 @@ public class VueAuthentification extends JFrame {
     private JTextField tfLogin;
     private JPasswordField pfPassword;
     private JButton btnConnexion;
+    private ControleurAuthentification controleur;
 
     public VueAuthentification() {
         initUI();
+        this.controleur = new ControleurAuthentification(this);
     }
 
     private void initUI() {
@@ -20,7 +22,6 @@ public class VueAuthentification extends JFrame {
         setSize(400, 200);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
-
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
@@ -71,10 +72,6 @@ public class VueAuthentification extends JFrame {
 
         add(panel);
 
-        // Créer une méthode publique pour faciliter le test de l'interface
-        // Si on ne crée pas le contrôleur dans Main, on peut le créer ici
-        // new ControleurAuthentification(this);
-
         setVisible(true);
     }
 
@@ -101,14 +98,25 @@ public class VueAuthentification extends JFrame {
 
     // Méthode pour ouvrir la vue principale et fermer la vue d'authentification
     public void ouvrirVuePrincipale(Utilisateur utilisateur) {
-        dispose(); // Fermer la fenêtre de connexion
-        new VuePrincipale(utilisateur);
+        // Cacher cette fenêtre au lieu de la détruire
+        this.setVisible(false);
+        // Créer et afficher la vue principale
+        VuePrincipale vuePrincipale = new VuePrincipale(utilisateur);
+        vuePrincipale.setVueAuthentification(this); // Passer la référence de cette vue
     }
 
-    // Méthode pour tester l'authentification directement (utile pour le débogage)
-    public void testerConnexion() {
-        tfLogin.setText("admin");
-        pfPassword.setText("admin");
-        btnConnexion.doClick();
+    // Méthode pour réinitialiser le formulaire pour une nouvelle connexion
+    public void reinitialiserFormulaire() {
+        tfLogin.setText("");
+        pfPassword.setText("");
+        tfLogin.requestFocus();
     }
+
+    // Méthode pour afficher à nouveau la fenêtre d'authentification
+    public void afficherFenetreConnexion() {
+        reinitialiserFormulaire();
+        this.setVisible(true);
+    }
+
+    
 }

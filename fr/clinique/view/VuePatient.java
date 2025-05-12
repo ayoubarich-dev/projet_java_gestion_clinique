@@ -68,10 +68,6 @@ public class VuePatient extends JPanel {
         add(panelBoutons, BorderLayout.SOUTH);
 
         // Gestion des droits selon le rôle
-        if (utilisateur.getRole() == Role.SECRETAIRE) {
-            btnSupprimer.setEnabled(false);
-        }
-
         if (utilisateur.getRole() == Role.MEDECIN) {
             btnAjouter.setEnabled(false);
             btnSupprimer.setEnabled(false);

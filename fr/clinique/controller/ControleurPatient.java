@@ -160,6 +160,7 @@ public class ControleurPatient {
         });
     }
 
+
     /**
      * Ajoute un nouveau patient.
      * @param nom Le nom du patient

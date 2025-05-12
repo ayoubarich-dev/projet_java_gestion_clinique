@@ -314,11 +314,56 @@ public class Medecin extends Utilisateur implements Observer {
      * @return Le médecin trouvé ou null si aucun médecin ne correspond
      */
     public static Medecin getMedecinById(int id) {
-        Utilisateur utilisateur = new Utilisateur();
-        Personne personne = utilisateur.rechercherParId(id);
-        if (personne instanceof Medecin) {
-            return (Medecin) personne;
+        Connection connection = DatabaseConnexion.getConnexion();
+
+        try {
+            // Récupérer d'abord les informations de l'utilisateur
+            String userQuery = "SELECT * FROM utilisateurs WHERE id = ? AND role = 'MEDECIN'";
+            PreparedStatement userPs = connection.prepareStatement(userQuery);
+            userPs.setInt(1, id);
+            ResultSet userRs = userPs.executeQuery();
+
+            if (userRs.next()) {
+                // Récupérer ensuite les informations spécifiques du médecin
+                String medecinQuery = "SELECT * FROM medecins WHERE id_utilisateur = ?";
+                PreparedStatement medecinPs = connection.prepareStatement(medecinQuery);
+                medecinPs.setInt(1, id);
+                ResultSet medecinRs = medecinPs.executeQuery();
+
+                if (medecinRs.next()) {
+                    Medecin medecin = new Medecin(
+                            userRs.getInt("id"),
+                            userRs.getString("nom"),
+                            userRs.getString("prenom"),
+                            userRs.getString("login"),
+                            userRs.getString("password"),
+                            medecinRs.getString("specialite"),
+                            medecinRs.getString("horaires")
+                    );
+
+                    medecinRs.close();
+                    medecinPs.close();
+                    userRs.close();
+                    userPs.close();
+
+                    System.out.println("Médecin trouvé: ID_USER=" + medecin.getId() + " - " + medecin.getNom() + " " + medecin.getPrenom());
+                    return medecin;
+                }
+
+                medecinRs.close();
+                medecinPs.close();
+            } else {
+                System.out.println("Aucun utilisateur médecin trouvé avec l'ID: " + id);
+            }
+
+            userRs.close();
+            userPs.close();
+        } catch (SQLException e) {
+            System.err.println("Erreur SQL lors de la recherche du médecin: " + e.getMessage());
+            e.printStackTrace();
         }
+
+        System.out.println("Médecin non trouvé avec l'ID: " + id);
         return null;
     }
 

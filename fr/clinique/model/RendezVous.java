@@ -65,106 +65,54 @@ public class RendezVous implements Model<RendezVous> {
     }
 
     // Getters et setters
-    /**
-     * Obtient l'identifiant du rendez-vous.
-     * @return L'identifiant
-     */
     public int getId() {
         return id;
     }
 
-    /**
-     * Définit l'identifiant du rendez-vous.
-     * @param id Le nouvel identifiant
-     */
     public void setId(int id) {
         this.id = id;
     }
 
-    /**
-     * Obtient le patient concerné par le rendez-vous.
-     * @return Le patient
-     */
     public Patient getPatient() {
         return patient;
     }
 
-    /**
-     * Définit le patient concerné par le rendez-vous.
-     * @param patient Le nouveau patient
-     */
     public void setPatient(Patient patient) {
         this.patient = patient;
     }
 
-    /**
-     * Obtient le médecin concerné par le rendez-vous.
-     * @return Le médecin
-     */
     public Medecin getMedecin() {
         return medecin;
     }
 
-    /**
-     * Définit le médecin concerné par le rendez-vous.
-     * @param medecin Le nouveau médecin
-     */
     public void setMedecin(Medecin medecin) {
         this.medecin = medecin;
     }
 
-    /**
-     * Obtient la date du rendez-vous.
-     * @return La date
-     */
     public Date getDate() {
         return date;
     }
 
-    /**
-     * Définit la date du rendez-vous.
-     * @param date La nouvelle date
-     */
     public void setDate(Date date) {
         this.date = date;
     }
 
-    /**
-     * Obtient l'heure du rendez-vous.
-     * @return L'heure
-     */
     public String getHeure() {
         return heure;
     }
 
-    /**
-     * Définit l'heure du rendez-vous.
-     * @param heure La nouvelle heure
-     */
     public void setHeure(String heure) {
         this.heure = heure;
     }
 
-    /**
-     * Obtient le motif du rendez-vous.
-     * @return Le motif
-     */
     public String getMotif() {
         return motif;
     }
 
-    /**
-     * Définit le motif du rendez-vous.
-     * @param motif Le nouveau motif
-     */
     public void setMotif(String motif) {
         this.motif = motif;
     }
 
-    /**
-     * Retourne une représentation textuelle du rendez-vous.
-     * @return La description du rendez-vous
-     */
     @Override
     public String toString() {
         return "Rendez-vous le " + date + " à " + heure + " avec Dr. " + medecin.getNom() +
@@ -172,37 +120,22 @@ public class RendezVous implements Model<RendezVous> {
     }
 
     // Méthodes pour le pattern Observer
-    /**
-     * Ajoute un observateur à la liste des observateurs.
-     * @param o L'observateur à ajouter
-     */
     public void ajouterObservateur(Observer o) {
         if (!observateurs.contains(o)) {
             observateurs.add(o);
         }
     }
 
-    /**
-     * Supprime un observateur de la liste des observateurs.
-     * @param o L'observateur à supprimer
-     */
     public void supprimerObservateur(Observer o) {
         observateurs.remove(o);
     }
 
-    /**
-     * Notifie tous les observateurs du rendez-vous.
-     */
     public void notifierObservateurs() {
         for (Observer observateur : observateurs) {
             observateur.update(this);
         }
     }
 
-    /**
-     * Enregistre le rendez-vous dans la base de données.
-     * @return true si l'enregistrement a réussi, false sinon
-     */
     @Override
     public boolean enregistrer() {
         Connection connection = DatabaseConnexion.getConnexion();
@@ -212,7 +145,7 @@ public class RendezVous implements Model<RendezVous> {
                 String query = "INSERT INTO rendez_vous (id_patient, id_medecin, date, heure, motif) VALUES (?, ?, ?, ?, ?)";
                 PreparedStatement ps = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
                 ps.setInt(1, this.patient.getId());
-                ps.setInt(2, this.medecin.getId());
+                ps.setInt(2, this.medecin.getId()); // ID de l'utilisateur médecin
                 ps.setDate(3, new java.sql.Date(this.date.getTime()));
                 ps.setString(4, this.heure);
                 ps.setString(5, this.motif);
@@ -238,7 +171,7 @@ public class RendezVous implements Model<RendezVous> {
                 String query = "UPDATE rendez_vous SET id_patient = ?, id_medecin = ?, date = ?, heure = ?, motif = ? WHERE id = ?";
                 PreparedStatement ps = connection.prepareStatement(query);
                 ps.setInt(1, this.patient.getId());
-                ps.setInt(2, this.medecin.getId());
+                ps.setInt(2, this.medecin.getId()); // ID de l'utilisateur médecin
                 ps.setDate(3, new java.sql.Date(this.date.getTime()));
                 ps.setString(4, this.heure);
                 ps.setString(5, this.motif);
@@ -254,10 +187,6 @@ public class RendezVous implements Model<RendezVous> {
         }
     }
 
-    /**
-     * Supprime le rendez-vous de la base de données.
-     * @return true si la suppression a réussi, false sinon
-     */
     @Override
     public boolean supprimer() {
         if (this.id == 0) return false;
@@ -277,92 +206,48 @@ public class RendezVous implements Model<RendezVous> {
         }
     }
 
-    /**
-     * Récupère tous les rendez-vous de la base de données.
-     * @return Liste de tous les rendez-vous
-     */
     @Override
     public List<RendezVous> afficherTous() {
         List<RendezVous> rendezVousList = new ArrayList<>();
         Connection connection = DatabaseConnexion.getConnexion();
-        String query = "SELECT * FROM rendez_vous";
+
+        String query = "SELECT rv.*, " +
+                "p.nom as patient_nom, p.prenom as patient_prenom, p.date_naissance, p.telephone, p.numero_dossier, " +
+                "u.id as medecin_id, u.nom as medecin_nom, u.prenom as medecin_prenom, u.login, u.password, " +
+                "m.specialite, m.horaires " +
+                "FROM rendez_vous rv " +
+                "JOIN patients p ON rv.id_patient = p.id " +
+                "JOIN utilisateurs u ON rv.id_medecin = u.id " +
+                "JOIN medecins m ON u.id = m.id_utilisateur " +
+                "WHERE u.role = 'MEDECIN'";
+
         try {
             Statement stmt = connection.createStatement();
             ResultSet rs = stmt.executeQuery(query);
 
             while (rs.next()) {
-                // Récupérer le patient
-                Patient patient = Patient.getPatientById(rs.getInt("id_patient"));
+                // Créer le patient
+                Patient patient = new Patient(
+                        rs.getInt("id_patient"),
+                        rs.getString("patient_nom"),
+                        rs.getString("patient_prenom"),
+                        rs.getDate("date_naissance"),
+                        rs.getString("telephone"),
+                        rs.getString("numero_dossier")
+                );
 
-                // IMPORTANT: Corriger la récupération du médecin
-                // id_medecin dans la table rendez_vous correspond à l'ID dans la table medecins
-                // Récupérer le médecin directement par son ID
-                Medecin medecin = null;
-                int medecinId = rs.getInt("id_medecin");
+                // Créer le médecin
+                Medecin medecin = new Medecin(
+                        rs.getInt("medecin_id"),
+                        rs.getString("medecin_nom"),
+                        rs.getString("medecin_prenom"),
+                        rs.getString("login"),
+                        rs.getString("password"),
+                        rs.getString("specialite"),
+                        rs.getString("horaires")
+                );
 
-                // Requête pour récupérer le médecin par son ID
-                String medecinQuery = "SELECT m.*, u.* FROM medecins m " +
-                        "JOIN utilisateurs u ON m.id_utilisateur = u.id " +
-                        "WHERE m.id = ?";
-                PreparedStatement psMedecin = connection.prepareStatement(medecinQuery);
-                psMedecin.setInt(1, medecinId);
-                ResultSet rsMedecin = psMedecin.executeQuery();
-
-                if (rsMedecin.next()) {
-                    medecin = new Medecin(
-                            rsMedecin.getInt("u.id"),
-                            rsMedecin.getString("u.nom"),
-                            rsMedecin.getString("u.prenom"),
-                            rsMedecin.getString("u.login"),
-                            rsMedecin.getString("u.password"),
-                            rsMedecin.getString("m.specialite"),
-                            rsMedecin.getString("m.horaires")
-                    );
-                    // Définir l'ID du médecin (table medecins)
-                    medecin.setId(medecinId);
-                }
-                rsMedecin.close();
-                psMedecin.close();
-
-                if (patient != null && medecin != null) {
-                    RendezVous rendezVous = new RendezVous(
-                            rs.getInt("id"),
-                            patient,
-                            medecin,
-                            rs.getDate("date"),
-                            rs.getString("heure"),
-                            rs.getString("motif")
-                    );
-                    rendezVousList.add(rendezVous);
-                }
-            }
-
-            rs.close();
-            stmt.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return rendezVousList;
-    }
-
-    /**
-     * Recherche un rendez-vous par son identifiant.
-     * @param id L'identifiant du rendez-vous à rechercher
-     * @return Le rendez-vous trouvé ou null si aucun rendez-vous ne correspond
-     */
-    @Override
-    public RendezVous rechercherParId(int id) {
-        Connection connection = DatabaseConnexion.getConnexion();
-        String query = "SELECT * FROM rendez_vous WHERE id = ?";
-        try {
-            PreparedStatement ps = connection.prepareStatement(query);
-            ps.setInt(1, id);
-            ResultSet rs = ps.executeQuery();
-
-            if (rs.next()) {
-                Patient patient = (Patient) new Patient().rechercherParId(rs.getInt("id_patient"));
-                Medecin medecin = Medecin.rechercherParIdUtilisateur(rs.getInt("id_medecin"));
-
+                // Créer le rendez-vous
                 RendezVous rendezVous = new RendezVous(
                         rs.getInt("id"),
                         patient,
@@ -371,6 +256,71 @@ public class RendezVous implements Model<RendezVous> {
                         rs.getString("heure"),
                         rs.getString("motif")
                 );
+
+                rendezVousList.add(rendezVous);
+            }
+
+            rs.close();
+            stmt.close();
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la récupération des rendez-vous: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return rendezVousList;
+    }
+
+    @Override
+    public RendezVous rechercherParId(int id) {
+        Connection connection = DatabaseConnexion.getConnexion();
+
+        String query = "SELECT rv.*, " +
+                "p.nom as patient_nom, p.prenom as patient_prenom, p.date_naissance, p.telephone, p.numero_dossier, " +
+                "u.id as medecin_id, u.nom as medecin_nom, u.prenom as medecin_prenom, u.login, u.password, " +
+                "m.specialite, m.horaires " +
+                "FROM rendez_vous rv " +
+                "JOIN patients p ON rv.id_patient = p.id " +
+                "JOIN utilisateurs u ON rv.id_medecin = u.id " +
+                "JOIN medecins m ON u.id = m.id_utilisateur " +
+                "WHERE rv.id = ?";
+
+        try {
+            PreparedStatement ps = connection.prepareStatement(query);
+            ps.setInt(1, id);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                // Créer le patient
+                Patient patient = new Patient(
+                        rs.getInt("id_patient"),
+                        rs.getString("patient_nom"),
+                        rs.getString("patient_prenom"),
+                        rs.getDate("date_naissance"),
+                        rs.getString("telephone"),
+                        rs.getString("numero_dossier")
+                );
+
+                // Créer le médecin
+                Medecin medecin = new Medecin(
+                        rs.getInt("medecin_id"),
+                        rs.getString("medecin_nom"),
+                        rs.getString("medecin_prenom"),
+                        rs.getString("login"),
+                        rs.getString("password"),
+                        rs.getString("specialite"),
+                        rs.getString("horaires")
+                );
+
+                // Créer le rendez-vous
+                RendezVous rendezVous = new RendezVous(
+                        rs.getInt("id"),
+                        patient,
+                        medecin,
+                        rs.getDate("date"),
+                        rs.getString("heure"),
+                        rs.getString("motif")
+                );
+
                 rs.close();
                 ps.close();
                 return rendezVous;
@@ -379,74 +329,79 @@ public class RendezVous implements Model<RendezVous> {
             rs.close();
             ps.close();
         } catch (SQLException e) {
+            System.err.println("Erreur lors de la recherche du rendez-vous: " + e.getMessage());
             e.printStackTrace();
         }
+
         return null;
     }
 
     /**
      * Récupère les rendez-vous d'un médecin.
-     * @param idMedecin L'identifiant du médecin
+     * @param idMedecin L'identifiant du médecin (ID utilisateur)
      * @return Liste des rendez-vous du médecin
      */
     public static List<RendezVous> getRendezVousParMedecin(int idMedecin) {
         List<RendezVous> rendezVousList = new ArrayList<>();
         Connection connection = DatabaseConnexion.getConnexion();
-        String query = "SELECT * FROM rendez_vous WHERE id_medecin = ?";
+
+        String query = "SELECT rv.*, " +
+                "p.nom as patient_nom, p.prenom as patient_prenom, p.date_naissance, p.telephone, p.numero_dossier, " +
+                "u.id as medecin_id, u.nom as medecin_nom, u.prenom as medecin_prenom, u.login, u.password, " +
+                "m.specialite, m.horaires " +
+                "FROM rendez_vous rv " +
+                "JOIN patients p ON rv.id_patient = p.id " +
+                "JOIN utilisateurs u ON rv.id_medecin = u.id " +
+                "JOIN medecins m ON u.id = m.id_utilisateur " +
+                "WHERE rv.id_medecin = ?";
+
         try {
             PreparedStatement ps = connection.prepareStatement(query);
             ps.setInt(1, idMedecin);
-
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-                // Récupérer le patient
-                Patient patient = Patient.getPatientById(rs.getInt("id_patient"));
+                // Créer le patient
+                Patient patient = new Patient(
+                        rs.getInt("id_patient"),
+                        rs.getString("patient_nom"),
+                        rs.getString("patient_prenom"),
+                        rs.getDate("date_naissance"),
+                        rs.getString("telephone"),
+                        rs.getString("numero_dossier")
+                );
 
-                // Récupérer le médecin
-                Medecin medecin = null;
-                int medecinId = rs.getInt("id_medecin");
+                // Créer le médecin
+                Medecin medecin = new Medecin(
+                        rs.getInt("medecin_id"),
+                        rs.getString("medecin_nom"),
+                        rs.getString("medecin_prenom"),
+                        rs.getString("login"),
+                        rs.getString("password"),
+                        rs.getString("specialite"),
+                        rs.getString("horaires")
+                );
 
-                String medecinQuery = "SELECT m.*, u.* FROM medecins m " +
-                        "JOIN utilisateurs u ON m.id_utilisateur = u.id " +
-                        "WHERE m.id = ?";
-                PreparedStatement psMedecin = connection.prepareStatement(medecinQuery);
-                psMedecin.setInt(1, medecinId);
-                ResultSet rsMedecin = psMedecin.executeQuery();
+                // Créer le rendez-vous
+                RendezVous rendezVous = new RendezVous(
+                        rs.getInt("id"),
+                        patient,
+                        medecin,
+                        rs.getDate("date"),
+                        rs.getString("heure"),
+                        rs.getString("motif")
+                );
 
-                if (rsMedecin.next()) {
-                    medecin = new Medecin(
-                            rsMedecin.getInt("u.id"),
-                            rsMedecin.getString("u.nom"),
-                            rsMedecin.getString("u.prenom"),
-                            rsMedecin.getString("u.login"),
-                            rsMedecin.getString("u.password"),
-                            rsMedecin.getString("m.specialite"),
-                            rsMedecin.getString("m.horaires")
-                    );
-                    medecin.setId(medecinId);
-                }
-                rsMedecin.close();
-                psMedecin.close();
-
-                if (patient != null && medecin != null) {
-                    RendezVous rendezVous = new RendezVous(
-                            rs.getInt("id"),
-                            patient,
-                            medecin,
-                            rs.getDate("date"),
-                            rs.getString("heure"),
-                            rs.getString("motif")
-                    );
-                    rendezVousList.add(rendezVous);
-                }
+                rendezVousList.add(rendezVous);
             }
 
             rs.close();
             ps.close();
         } catch (SQLException e) {
+            System.err.println("Erreur lors de la récupération des rendez-vous par médecin: " + e.getMessage());
             e.printStackTrace();
         }
+
         return rendezVousList;
     }
 
@@ -472,44 +427,69 @@ public class RendezVous implements Model<RendezVous> {
     /**
      * Ajoute un nouveau rendez-vous.
      * @param idPatient L'identifiant du patient
-     * @param idMedecin L'identifiant du médecin
+     * @param idMedecin L'identifiant du médecin (ID utilisateur)
      * @param date La date du rendez-vous
      * @param heure L'heure du rendez-vous
      * @param motif Le motif du rendez-vous
      * @return true si l'ajout a réussi, false sinon
      */
     public static boolean ajouterRendezVous(int idPatient, int idMedecin, Date date, String heure, String motif) {
+        System.out.println("=== RendezVous.ajouterRendezVous ===");
+        System.out.println("ID Patient: " + idPatient);
+        System.out.println("ID Médecin (utilisateur): " + idMedecin);
+
         Patient patient = Patient.getPatientById(idPatient);
         Medecin medecin = Medecin.getMedecinById(idMedecin);
 
-        if (patient == null || medecin == null) {
+        if (patient == null) {
+            System.err.println("Patient non trouvé avec l'ID: " + idPatient);
             return false;
         }
 
-        // Récupérer l'ID du médecin dans la table medecins (pas l'ID utilisateur)
-        int medecinTableId = recupererIdMedecinDansTableMedecins(medecin.getId());
+        if (medecin == null) {
+            System.err.println("Médecin non trouvé avec l'ID utilisateur: " + idMedecin);
+            return false;
+        }
+
+        System.out.println("Patient trouvé: " + patient.getNom() + " " + patient.getPrenom());
+        System.out.println("Médecin trouvé: " + medecin.getNom() + " " + medecin.getPrenom());
 
         Connection connection = DatabaseConnexion.getConnexion();
         try {
             String query = "INSERT INTO rendez_vous (id_patient, id_medecin, date, heure, motif) VALUES (?, ?, ?, ?, ?)";
-            PreparedStatement ps = connection.prepareStatement(query);
+            PreparedStatement ps = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS);
             ps.setInt(1, idPatient);
-            ps.setInt(2, medecinTableId); // Utiliser l'ID de la table medecins
+            ps.setInt(2, idMedecin); // Utiliser directement l'ID utilisateur du médecin
             ps.setDate(3, new java.sql.Date(date.getTime()));
             ps.setString(4, heure);
             ps.setString(5, motif);
 
+            System.out.println("Exécution de la requête d'insertion...");
             int result = ps.executeUpdate();
-            ps.close();
 
             if (result > 0) {
+                ResultSet generatedKeys = ps.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    int newId = generatedKeys.getInt(1);
+                    System.out.println("Rendez-vous créé avec l'ID: " + newId);
+                }
+                generatedKeys.close();
+
                 // Notifier le médecin
                 RendezVous rendezVous = new RendezVous(patient, medecin, date, heure, motif);
                 rendezVous.ajouterObservateur(medecin);
                 rendezVous.notifierObservateurs();
+
+                ps.close();
+                System.out.println("Rendez-vous ajouté avec succès");
                 return true;
+            } else {
+                System.err.println("Aucune ligne insérée");
+                ps.close();
+                return false;
             }
         } catch (SQLException e) {
+            System.err.println("Erreur SQL lors de l'ajout du rendez-vous: " + e.getMessage());
             e.printStackTrace();
         }
         return false;
@@ -519,7 +499,7 @@ public class RendezVous implements Model<RendezVous> {
      * Modifie un rendez-vous existant.
      * @param id L'identifiant du rendez-vous
      * @param idPatient L'identifiant du patient
-     * @param idMedecin L'identifiant du médecin
+     * @param idMedecin L'identifiant du médecin (ID utilisateur)
      * @param date La nouvelle date du rendez-vous
      * @param heure La nouvelle heure du rendez-vous
      * @param motif Le nouveau motif du rendez-vous
@@ -530,11 +510,29 @@ public class RendezVous implements Model<RendezVous> {
         Medecin medecin = Medecin.getMedecinById(idMedecin);
 
         if (patient == null || medecin == null) {
+            System.err.println("Patient ou médecin non trouvé pour la modification");
             return false;
         }
 
-        RendezVous rendezVous = new RendezVous(id, patient, medecin, date, heure, motif);
-        return rendezVous.enregistrer();
+        Connection connection = DatabaseConnexion.getConnexion();
+        try {
+            String query = "UPDATE rendez_vous SET id_patient = ?, id_medecin = ?, date = ?, heure = ?, motif = ? WHERE id = ?";
+            PreparedStatement ps = connection.prepareStatement(query);
+            ps.setInt(1, idPatient);
+            ps.setInt(2, idMedecin); // Utiliser directement l'ID utilisateur du médecin
+            ps.setDate(3, new java.sql.Date(date.getTime()));
+            ps.setString(4, heure);
+            ps.setString(5, motif);
+            ps.setInt(6, id);
+
+            int result = ps.executeUpdate();
+            ps.close();
+            return result > 0;
+        } catch (SQLException e) {
+            System.err.println("Erreur SQL lors de la modification du rendez-vous: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
     }
 
     /**
@@ -557,26 +555,6 @@ public class RendezVous implements Model<RendezVous> {
      * @param cheminFichier Le chemin du fichier de destination
      * @return true si l'export a réussi, false sinon
      */
-
-    private static int recupererIdMedecinDansTableMedecins(int idUtilisateur) {
-        Connection connection = DatabaseConnexion.getConnexion();
-        String query = "SELECT id FROM medecins WHERE id_utilisateur = ?";
-        try {
-            PreparedStatement ps = connection.prepareStatement(query);
-            ps.setInt(1, idUtilisateur);
-            ResultSet rs = ps.executeQuery();
-
-            if (rs.next()) {
-                return rs.getInt("id");
-            }
-
-            rs.close();
-            ps.close();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return -1;
-    }
     public static boolean exporterExcel(List<RendezVous> rendezVous, String cheminFichier) {
         ExcelExporter exporter = new ExcelExporter();
         return exporter.exporter(rendezVous, cheminFichier);

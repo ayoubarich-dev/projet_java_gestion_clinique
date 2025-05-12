@@ -15,6 +15,7 @@ import java.util.List;
 
 public class VuePrincipale extends JFrame {
     private Utilisateur utilisateur;
+    private VueAuthentification vueAuthentification; // Référence à la vue d'authentification
 
     private JMenuBar menuBar;
     private JMenu menuPatients, menuMedecins, menuSecretaires, menuRendezVous, menuQuitter, menuMessages;
@@ -24,7 +25,6 @@ public class VuePrincipale extends JFrame {
     private JMenuItem miListeRendezVous, miAjouterRendezVous, miExporterExcel, miExporterPDF;
     private JMenuItem miDeconnexion, miQuitter;
     private JMenuItem miAfficherMessages;
-    private JTextArea zoneNotifications;
     private JPanel contentPanel;
     private ControleurPatient controleurPatient;
     private ControleurMedecin controleurMedecin;
@@ -37,36 +37,57 @@ public class VuePrincipale extends JFrame {
 
         // Vérifier si le médecin a des messages à sa connexion
         if (utilisateur.getRole() == Role.MEDECIN) {
-            Medecin medecin = Medecin.rechercherParIdUtilisateur(utilisateur.getId());
-            if (medecin != null) {
-                SwingUtilities.invokeLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        List<String> messages = Medecin.getMessagesPourMedecin(medecin.getId());
-                        if (!messages.isEmpty()) {
-                            int reponse = JOptionPane.showConfirmDialog(VuePrincipale.this,
-                                    "Vous avez " + messages.size() + " nouveau(x) message(s). Souhaitez-vous les consulter maintenant?",
-                                    "Nouveaux messages",
-                                    JOptionPane.YES_NO_OPTION,
-                                    JOptionPane.INFORMATION_MESSAGE);
+            if (utilisateur.getRole() == Role.MEDECIN) {
+                Medecin medecin = Medecin.rechercherParIdUtilisateur(utilisateur.getId());
+                if (medecin != null) {
+                    SwingUtilities.invokeLater(new Runnable() {
+                        @Override
+                        public void run() {
+                            List<String> messages = Medecin.getMessagesPourMedecin(medecin.getId());
+                            if (!messages.isEmpty()) {
+                                int reponse = JOptionPane.showConfirmDialog(VuePrincipale.this,
+                                        "Vous avez " + messages.size() + " nouveau(x) message(s). Souhaitez-vous les consulter maintenant?",
+                                        "Nouveaux messages",
+                                        JOptionPane.YES_NO_OPTION,
+                                        JOptionPane.INFORMATION_MESSAGE);
 
-                            if (reponse == JOptionPane.YES_OPTION) {
-                                afficherMessages(medecin.getId());
+                                if (reponse == JOptionPane.YES_OPTION) {
+                                    afficherMessages(medecin.getId());
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                }
             }
         }
     }
-
+    public void setVueAuthentification(VueAuthentification vueAuthentification) {
+        this.vueAuthentification = vueAuthentification;
+    }
     private void initUI() {
         setTitle("Gestion de Clinique Médicale");
         setSize(800, 600);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // Menu
+        setTitle("Gestion de Clinique Médicale");
+        setSize(800, 600);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); // Changé pour gérer la fermeture
+        setLocationRelativeTo(null);
+
+        // Ajouter un gestionnaire de fermeture de fenêtre
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                int confirmer = JOptionPane.showConfirmDialog(VuePrincipale.this,
+                        "Êtes-vous sûr de vouloir quitter l'application?", "Confirmation de fermeture",
+                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+                if (confirmer == JOptionPane.YES_OPTION) {
+                    System.exit(0);
+                }
+            }
+        });
         menuBar = new JMenuBar();
 
         // Menu Patients
@@ -164,28 +185,8 @@ public class VuePrincipale extends JFrame {
 
         contentPanel.add(welcomePanel, BorderLayout.CENTER);
 
-        // Zone de notifications (uniquement pour les médecins)
-        if (utilisateur.getRole() == Role.MEDECIN) {
-            zoneNotifications = new JTextArea(5, 50);
-            zoneNotifications.setEditable(false);
-            zoneNotifications.setFont(new Font("Monospaced", Font.PLAIN, 12));
-            JScrollPane scrollNotifications = new JScrollPane(zoneNotifications);
-            scrollNotifications.setBorder(BorderFactory.createTitledBorder("Notifications"));
+        add(contentPanel);
 
-            // Enregistrer la zone de notifications dans le gestionnaire
-            NotificationManager.getInstance().setZoneNotifications(zoneNotifications);
-
-            // Panneau divisé entre le contenu principal et les notifications
-            JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
-                    contentPanel,
-                    scrollNotifications);
-            splitPane.setResizeWeight(0.8); // 80% pour le contenu, 20% pour les notifications
-
-            add(splitPane);
-        } else {
-            // Pour les autres rôles, pas de zone de notifications
-            add(contentPanel);
-        }
 
         // Configuration selon les rôles
         configureMenuAccess();
@@ -1174,6 +1175,156 @@ public class VuePrincipale extends JFrame {
 
         System.out.println("Formulaire d'ajout de secrétaire affiché");
     }
+    public void showEditSecretaireForm(int id) {
+        // Rechercher le secrétaire
+        List<Secretaire> secretaires = Secretaire.getAllSecretaires();
+        Secretaire secretaire = null;
+
+        for (Secretaire s : secretaires) {
+            if (s.getId() == id) {
+                secretaire = s;
+                break;
+            }
+        }
+
+        if (secretaire == null) {
+            JOptionPane.showMessageDialog(this,
+                    "Secrétaire introuvable",
+                    "Erreur",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Afficher un formulaire de modification de secrétaire
+        JDialog dialog = new JDialog(this, "Modifier un secrétaire", true);
+        dialog.setSize(400, 300);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout());
+
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Nom
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panel.add(new JLabel("Nom:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField tfNom = new JTextField(secretaire.getNom(), 20);
+        panel.add(tfNom, gbc);
+
+        // Prénom
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Prénom:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField tfPrenom = new JTextField(secretaire.getPrenom(), 20);
+        panel.add(tfPrenom, gbc);
+
+        // Login (non modifiable)
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Login:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField tfLogin = new JTextField(secretaire.getLogin(), 20);
+        tfLogin.setEnabled(false); // Le login ne peut pas être modifié
+        panel.add(tfLogin, gbc);
+
+        // Note: Le mot de passe n'est pas modifiable dans le formulaire de modification
+
+        // Boutons
+        JPanel panelBoutons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton btnValider = new JButton("Valider");
+        JButton btnAnnuler = new JButton("Annuler");
+
+        final int idSecretaire = id;
+
+        btnValider.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (tfNom.getText().trim().isEmpty() ||
+                        tfPrenom.getText().trim().isEmpty()) {
+
+                    JOptionPane.showMessageDialog(dialog,
+                            "Veuillez remplir tous les champs",
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                boolean result = false;
+
+                try {
+                    // Récupérer le secrétaire et modifier ses propriétés
+                    Secretaire secretaireAModifier = null;
+                    List<Secretaire> secretaires = Secretaire.getAllSecretaires();
+
+                    for (Secretaire s : secretaires) {
+                        if (s.getId() == idSecretaire) {
+                            secretaireAModifier = s;
+                            break;
+                        }
+                    }
+
+                    if (secretaireAModifier != null) {
+                        secretaireAModifier.setNom(tfNom.getText().trim());
+                        secretaireAModifier.setPrenom(tfPrenom.getText().trim());
+                        result = secretaireAModifier.enregistrer();
+                    }
+
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Erreur lors de la modification du secrétaire: " + ex.getMessage(),
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                if (result) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Secrétaire modifié avec succès",
+                            "Modification réussie",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    dialog.dispose();
+
+                    // Rafraîchir la liste si elle est affichée
+                    if (contentPanel.getComponentCount() > 0 && contentPanel.getComponent(0) instanceof VueSecretaire) {
+                        showSecretaireList();
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Erreur lors de la modification du secrétaire",
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        btnAnnuler.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dialog.dispose();
+            }
+        });
+
+        panelBoutons.add(btnValider);
+        panelBoutons.add(btnAnnuler);
+
+        dialog.add(panel, BorderLayout.CENTER);
+        dialog.add(panelBoutons, BorderLayout.SOUTH);
+        dialog.setVisible(true);
+
+        System.out.println("Formulaire de modification de secrétaire affiché");
+    }
 
     private void showRendezVousList() {
         contentPanel.removeAll();
@@ -1306,13 +1457,54 @@ public class VuePrincipale extends JFrame {
         }
     }
 
+    // Implémentation de la méthode logout corrigée
     private void logout() {
-        dispose();
-        new VueAuthentification();
+        int confirmer = JOptionPane.showConfirmDialog(this,
+                "Êtes-vous sûr de vouloir vous déconnecter?", "Confirmation de déconnexion",
+                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+        if (confirmer == JOptionPane.YES_OPTION) {
+            System.out.println("Déconnexion confirmée - Fermeture de la vue principale");
+
+            // Nettoyer toutes les références aux contrôleurs
+            if (controleurPatient != null) controleurPatient = null;
+            if (controleurMedecin != null) controleurMedecin = null;
+            if (controleurSecretaire != null) controleurSecretaire = null;
+            if (controleurRendezVous != null) controleurRendezVous = null;
+
+            // Effacer les notifications si c'est un médecin
+            if (utilisateur.getRole() == Role.MEDECIN) {
+                NotificationManager.getInstance().clearNotifications();
+                NotificationManager.getInstance().setZoneNotifications(null);
+            }
+
+            // Vider le panel de contenu
+            if (contentPanel != null) {
+                contentPanel.removeAll();
+                contentPanel = null;
+            }
+
+            // Réafficher la fenêtre d'authentification
+            if (vueAuthentification != null) {
+                System.out.println("Réaffichage de la vue d'authentification");
+                vueAuthentification.afficherFenetreConnexion();
+            } else {
+                // Si la référence n'existe pas, créer une nouvelle instance
+                System.out.println("Création d'une nouvelle vue d'authentification");
+                new VueAuthentification();
+            }
+            this.dispose();
+        }
     }
 
     private void exit() {
-        System.exit(0);
+        int confirmer = JOptionPane.showConfirmDialog(this,
+                "Êtes-vous sûr de vouloir quitter l'application?", "Confirmation de fermeture",
+                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+        if (confirmer == JOptionPane.YES_OPTION) {
+            System.exit(0);
+        }
     }
 
     public Utilisateur getUtilisateur() {

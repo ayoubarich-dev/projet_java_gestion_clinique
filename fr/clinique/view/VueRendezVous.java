@@ -133,11 +133,6 @@ public class VueRendezVous extends JPanel {
 
         dialogFormulaire.setTitle("Ajouter un rendez-vous");
         dialogFormulaire.setVisible(true);
-
-        // Attacher les écouteurs après l'affichage
-        if (controleur != null) {
-            controleur.attacherEcouteursFormulaire();
-        }
     }
 
     public void afficherFormulaireModification(int id) {
@@ -146,11 +141,6 @@ public class VueRendezVous extends JPanel {
 
         dialogFormulaire.setTitle("Modifier un rendez-vous");
         dialogFormulaire.setVisible(true);
-
-        // Attacher les écouteurs après l'affichage
-        if (controleur != null) {
-            controleur.attacherEcouteursFormulaire();
-        }
     }
 
     public void remplirComboBoxes(List<Patient> patients, List<Medecin> medecins) {
@@ -158,33 +148,56 @@ public class VueRendezVous extends JPanel {
         System.out.println("Nombre de patients reçus: " + patients.size());
         System.out.println("Nombre de médecins reçus: " + medecins.size());
 
+        // S'assurer que les comboboxes existent
+        if (cbPatient == null || cbMedecin == null) {
+            System.err.println("ERREUR: Les ComboBoxes ne sont pas encore initialisées!");
+            System.err.println("cbPatient: " + cbPatient);
+            System.err.println("cbMedecin: " + cbMedecin);
+            System.err.println("Création du formulaire nécessaire avant le remplissage des comboboxes");
+            creerFormulaire();
+        }
+
         // Vider les combobox
         cbPatient.removeAllItems();
         cbMedecin.removeAllItems();
 
         // Remplir avec les données actuelles
         for (Patient patient : patients) {
-            cbPatient.addItem(patient);
-            System.out.println("Ajout patient: " + patient.getNom() + " " + patient.getPrenom());
+            if (patient != null) {
+                cbPatient.addItem(patient);
+                System.out.println("Ajout patient: " + patient.getId() + " - " + patient.getNom() + " " + patient.getPrenom());
+            }
         }
 
         for (Medecin medecin : medecins) {
-            cbMedecin.addItem(medecin);
-            System.out.println("Ajout médecin: " + medecin.getNom() + " " + medecin.getPrenom());
+            if (medecin != null) {
+                cbMedecin.addItem(medecin);
+                System.out.println("Ajout médecin: " + medecin.getId() + " - " + medecin.getNom() + " " + medecin.getPrenom());
+            }
         }
 
         System.out.println("ComboBox patient - Nombre d'items: " + cbPatient.getItemCount());
         System.out.println("ComboBox médecin - Nombre d'items: " + cbMedecin.getItemCount());
     }
 
+    // Méthode publique pour créer le formulaire (appelée par le contrôleur)
+    public void creerFormulairePublic() {
+        creerFormulaire();
+    }
+
     private void creerFormulaire() {
         if (dialogFormulaire == null) {
+            System.out.println("=== Création du formulaire de rendez-vous ===");
+
             // Créer la boîte de dialogue une seule fois
             Window window = SwingUtilities.getWindowAncestor(this);
             if (window instanceof JFrame) {
                 dialogFormulaire = new JDialog((JFrame) window, "", true);
+            } else if (window instanceof JDialog) {
+                dialogFormulaire = new JDialog((JDialog) window, "", true);
             } else {
-                dialogFormulaire = new JDialog((Dialog) window, "", true);
+                // Fallback si le parent n'est pas trouvé
+                dialogFormulaire = new JDialog((JFrame) null, "", true);
             }
 
             dialogFormulaire.setSize(500, 350);
@@ -204,14 +217,16 @@ public class VueRendezVous extends JPanel {
             gbc.gridx = 1;
             gbc.weightx = 1;
             cbPatient = new JComboBox<>();
-            // IMPORTANT: Définir le renderer pour afficher correctement les patients
+            // Renderer personnalisé pour afficher correctement les patients
             cbPatient.setRenderer(new DefaultListCellRenderer() {
                 @Override
                 public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                     super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                    if (value instanceof Patient) {
+                    if (value != null && value instanceof Patient) {
                         Patient patient = (Patient) value;
                         setText(patient.getPrenom() + " " + patient.getNom());
+                    } else if (value == null) {
+                        setText("");
                     }
                     return this;
                 }
@@ -227,14 +242,16 @@ public class VueRendezVous extends JPanel {
             gbc.gridx = 1;
             gbc.weightx = 1;
             cbMedecin = new JComboBox<>();
-            // IMPORTANT: Définir le renderer pour afficher correctement les médecins
+            // Renderer personnalisé pour afficher correctement les médecins
             cbMedecin.setRenderer(new DefaultListCellRenderer() {
                 @Override
                 public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
                     super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-                    if (value instanceof Medecin) {
+                    if (value != null && value instanceof Medecin) {
                         Medecin medecin = (Medecin) value;
                         setText("Dr. " + medecin.getPrenom() + " " + medecin.getNom() + " (" + medecin.getSpecialite() + ")");
+                    } else if (value == null) {
+                        setText("");
                     }
                     return this;
                 }
@@ -285,27 +302,73 @@ public class VueRendezVous extends JPanel {
             System.out.println("btnValider créé: " + (btnValider != null));
             System.out.println("btnAnnuler créé: " + (btnAnnuler != null));
 
+            // Ajouter les écouteurs aux boutons directement ici (comme dans VuePatient)
+            btnValider.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    validerFormulaire();
+                }
+            });
+
+            btnAnnuler.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    dialogFormulaire.dispose();
+                }
+            });
+
             panelBoutons.add(btnValider);
             panelBoutons.add(btnAnnuler);
 
             dialogFormulaire.add(panel, BorderLayout.CENTER);
             dialogFormulaire.add(panelBoutons, BorderLayout.SOUTH);
+
+            // Forcer la mise à jour de l'interface
+            dialogFormulaire.pack();
+            dialogFormulaire.setSize(500, 350);
+
+            System.out.println("Formulaire créé avec succès");
+            System.out.println("cbPatient initialisé: " + (cbPatient != null));
+            System.out.println("cbMedecin initialisé: " + (cbMedecin != null));
+        }
+    }
+
+    // Méthode privée pour valider le formulaire (comme dans VuePatient)
+    private void validerFormulaire() {
+        if (controleur != null) {
+            controleur.validerFormulaire();
+        } else {
+            System.err.println("Contrôleur null - impossible de valider le formulaire");
         }
     }
 
     // Méthode pour remplir le formulaire avec les données d'un rendez-vous existant
     public void remplirFormulaireModification(RendezVous rv) {
+        if (rv == null || rv.getPatient() == null || rv.getMedecin() == null) {
+            System.err.println("Rendez-vous, patient ou médecin null!");
+            return;
+        }
+
+        System.out.println("=== Remplissage du formulaire pour modification ===");
+        System.out.println("Rendez-vous ID: " + rv.getId());
+        System.out.println("Patient: " + rv.getPatient().getNom() + " " + rv.getPatient().getPrenom());
+        System.out.println("Médecin: " + rv.getMedecin().getNom() + " " + rv.getMedecin().getPrenom());
+
         // Sélectionner le patient et le médecin dans les combobox
         for (int i = 0; i < cbPatient.getItemCount(); i++) {
-            if (cbPatient.getItemAt(i).getId() == rv.getPatient().getId()) {
+            Patient p = cbPatient.getItemAt(i);
+            if (p != null && p.getId() == rv.getPatient().getId()) {
                 cbPatient.setSelectedIndex(i);
+                System.out.println("Patient sélectionné à l'index: " + i);
                 break;
             }
         }
 
         for (int i = 0; i < cbMedecin.getItemCount(); i++) {
-            if (cbMedecin.getItemAt(i).getId() == rv.getMedecin().getId()) {
+            Medecin m = cbMedecin.getItemAt(i);
+            if (m != null && m.getId() == rv.getMedecin().getId()) {
                 cbMedecin.setSelectedIndex(i);
+                System.out.println("Médecin sélectionné à l'index: " + i);
                 break;
             }
         }
@@ -315,6 +378,8 @@ public class VueRendezVous extends JPanel {
         ftfDate.setText(sdf.format(rv.getDate()));
         tfHeure.setText(rv.getHeure());
         tfMotif.setText(rv.getMotif());
+
+        System.out.println("Formulaire rempli avec les données du rendez-vous");
     }
 
     // Méthodes pour le contrôleur
