@@ -8,6 +8,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 public class VuePrincipale extends JFrame {
@@ -23,8 +26,6 @@ public class VuePrincipale extends JFrame {
     private JMenuItem miAfficherMessages;
     private JTextArea zoneNotifications;
     private JPanel contentPanel;
-
-    // Stocker les contrôleurs actifs
     private ControleurPatient controleurPatient;
     private ControleurMedecin controleurMedecin;
     private ControleurSecretaire controleurSecretaire;
@@ -36,12 +37,12 @@ public class VuePrincipale extends JFrame {
 
         // Vérifier si le médecin a des messages à sa connexion
         if (utilisateur.getRole() == Role.MEDECIN) {
-            Medecin medecin = MedecinModel.getMedecinByUtilisateurId(utilisateur.getId());
+            Medecin medecin = Medecin.rechercherParIdUtilisateur(utilisateur.getId());
             if (medecin != null) {
                 SwingUtilities.invokeLater(new Runnable() {
                     @Override
                     public void run() {
-                        List<String> messages = MedecinModel.getMessagesPourMedecin(medecin.getId());
+                        List<String> messages = Medecin.getMessagesPourMedecin(medecin.getId());
                         if (!messages.isEmpty()) {
                             int reponse = JOptionPane.showConfirmDialog(VuePrincipale.this,
                                     "Vous avez " + messages.size() + " nouveau(x) message(s). Souhaitez-vous les consulter maintenant?",
@@ -292,7 +293,7 @@ public class VuePrincipale extends JFrame {
             miAfficherMessages.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent e) {
-                    Medecin medecin = MedecinModel.getMedecinByUtilisateurId(utilisateur.getId());
+                    Medecin medecin = Medecin.rechercherParIdUtilisateur(utilisateur.getId());
                     if (medecin != null) {
                         afficherMessages(medecin.getId());
                     }
@@ -320,7 +321,7 @@ public class VuePrincipale extends JFrame {
     // Méthode pour afficher les messages du médecin
     public void afficherMessages(int idMedecin) {
         // Récupérer tous les messages du médecin
-        List<String> messages = MedecinModel.getMessagesPourMedecin(idMedecin);
+        List<String> messages = Medecin.getMessagesPourMedecin(idMedecin);
 
         if (messages.isEmpty()) {
             JOptionPane.showMessageDialog(this,
@@ -351,7 +352,7 @@ public class VuePrincipale extends JFrame {
         btnMarquerLu.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                MedecinModel.clearMessagesPourMedecin(idMedecin);
+                Medecin.clearMessagesPourMedecin(idMedecin);
                 dialogMessages.dispose();
 
                 JOptionPane.showMessageDialog(VuePrincipale.this,
@@ -378,9 +379,6 @@ public class VuePrincipale extends JFrame {
             // Créer et stocker le contrôleur
             controleurPatient = new ControleurPatient(vuePatient);
 
-            // Appeler directement la méthode publique
-            controleurPatient.attacherEcouteursFormulaire();
-
             // Ajouter la vue au panneau
             contentPanel.add(vuePatient, BorderLayout.CENTER);
             contentPanel.revalidate();
@@ -397,19 +395,307 @@ public class VuePrincipale extends JFrame {
         }
     }
 
-    private void showAddPatientForm() {
-        // Vérifier si la vue patient est déjà affichée, sinon l'afficher
-        if (contentPanel.getComponentCount() == 0 || !(contentPanel.getComponent(0) instanceof VuePatient)) {
-            showPatientList();
-        }
+    public void showAddPatientForm() {
+        // Afficher un formulaire d'ajout de patient
+        JDialog dialog = new JDialog(this, "Ajouter un patient", true);
+        dialog.setSize(400, 350);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout());
 
-        // Récupérer la vue patient
-        VuePatient vuePatient = (VuePatient) contentPanel.getComponent(0);
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Afficher le formulaire d'ajout
-        vuePatient.afficherFormulaireAjout();
+        // Nom
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panel.add(new JLabel("Nom:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField tfNom = new JTextField(20);
+        panel.add(tfNom, gbc);
+
+        // Prénom
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Prénom:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField tfPrenom = new JTextField(20);
+        panel.add(tfPrenom, gbc);
+
+        // Date de naissance
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Date de naissance:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JFormattedTextField ftfDateNaissance = new JFormattedTextField();
+        ftfDateNaissance.setToolTipText("Format: JJ/MM/AAAA");
+        panel.add(ftfDateNaissance, gbc);
+
+        // Téléphone
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Téléphone:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField tfTelephone = new JTextField(20);
+        panel.add(tfTelephone, gbc);
+
+        // Boutons
+        JPanel panelBoutons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton btnValider = new JButton("Valider");
+        JButton btnAnnuler = new JButton("Annuler");
+
+        btnValider.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (tfNom.getText().trim().isEmpty() ||
+                        tfPrenom.getText().trim().isEmpty() ||
+                        ftfDateNaissance.getText().trim().isEmpty() ||
+                        tfTelephone.getText().trim().isEmpty()) {
+
+                    JOptionPane.showMessageDialog(dialog,
+                            "Veuillez remplir tous les champs",
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Vérifier le format de la date
+                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                sdf.setLenient(false);
+                Date dateNaissance;
+
+                try {
+                    dateNaissance = sdf.parse(ftfDateNaissance.getText());
+                } catch (ParseException ex) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Format de date invalide. Utilisez JJ/MM/AAAA",
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                boolean result = false;
+
+                try {
+                    result = ControleurPatient.ajouterPatient(
+                            tfNom.getText().trim(),
+                            tfPrenom.getText().trim(),
+                            dateNaissance,
+                            tfTelephone.getText().trim()
+                    );
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Erreur lors de l'ajout du patient: " + ex.getMessage(),
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                if (result) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Patient ajouté avec succès",
+                            "Ajout réussi",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    dialog.dispose();
+
+                    // Rafraîchir la liste si elle est affichée
+                    if (contentPanel.getComponentCount() > 0 && contentPanel.getComponent(0) instanceof VuePatient) {
+                        showPatientList();
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Erreur lors de l'ajout du patient",
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        btnAnnuler.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dialog.dispose();
+            }
+        });
+
+        panelBoutons.add(btnValider);
+        panelBoutons.add(btnAnnuler);
+
+        dialog.add(panel, BorderLayout.CENTER);
+        dialog.add(panelBoutons, BorderLayout.SOUTH);
+        dialog.setVisible(true);
 
         System.out.println("Formulaire d'ajout de patient affiché");
+    }
+
+    public void showEditPatientForm(int id) {
+        // Rechercher le patient
+        Patient patient = Patient.getPatientById(id);
+        if (patient == null) {
+            JOptionPane.showMessageDialog(this,
+                    "Patient introuvable",
+                    "Erreur",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Afficher un formulaire de modification de patient
+        JDialog dialog = new JDialog(this, "Modifier un patient", true);
+        dialog.setSize(400, 350);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout());
+
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Nom
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panel.add(new JLabel("Nom:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField tfNom = new JTextField(patient.getNom(), 20);
+        panel.add(tfNom, gbc);
+
+        // Prénom
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Prénom:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField tfPrenom = new JTextField(patient.getPrenom(), 20);
+        panel.add(tfPrenom, gbc);
+
+        // Date de naissance
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Date de naissance:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+        JFormattedTextField ftfDateNaissance = new JFormattedTextField();
+        ftfDateNaissance.setText(sdf.format(patient.getDateNaissance()));
+        ftfDateNaissance.setToolTipText("Format: JJ/MM/AAAA");
+        panel.add(ftfDateNaissance, gbc);
+
+        // Téléphone
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Téléphone:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField tfTelephone = new JTextField(patient.getTelephone(), 20);
+        panel.add(tfTelephone, gbc);
+
+        // Boutons
+        JPanel panelBoutons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton btnValider = new JButton("Valider");
+        JButton btnAnnuler = new JButton("Annuler");
+
+        btnValider.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (tfNom.getText().trim().isEmpty() ||
+                        tfPrenom.getText().trim().isEmpty() ||
+                        ftfDateNaissance.getText().trim().isEmpty() ||
+                        tfTelephone.getText().trim().isEmpty()) {
+
+                    JOptionPane.showMessageDialog(dialog,
+                            "Veuillez remplir tous les champs",
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Vérifier le format de la date
+                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                sdf.setLenient(false);
+                Date dateNaissance;
+
+                try {
+                    dateNaissance = sdf.parse(ftfDateNaissance.getText());
+                } catch (ParseException ex) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Format de date invalide. Utilisez JJ/MM/AAAA",
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                boolean result = false;
+
+                try {
+                    result = Patient.modifierPatient(
+                            id,
+                            tfNom.getText().trim(),
+                            tfPrenom.getText().trim(),
+                            dateNaissance,
+                            tfTelephone.getText().trim()
+                    );
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Erreur lors de la modification du patient: " + ex.getMessage(),
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                if (result) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Patient modifié avec succès",
+                            "Modification réussie",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    dialog.dispose();
+
+                    // Rafraîchir la liste si elle est affichée
+                    if (contentPanel.getComponentCount() > 0 && contentPanel.getComponent(0) instanceof VuePatient) {
+                        showPatientList();
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Erreur lors de la modification du patient",
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        btnAnnuler.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dialog.dispose();
+            }
+        });
+
+        panelBoutons.add(btnValider);
+        panelBoutons.add(btnAnnuler);
+
+        dialog.add(panel, BorderLayout.CENTER);
+        dialog.add(panelBoutons, BorderLayout.SOUTH);
+        dialog.setVisible(true);
+
+        System.out.println("Formulaire de modification de patient affiché");
     }
 
 
@@ -417,19 +703,11 @@ public class VuePrincipale extends JFrame {
         contentPanel.removeAll();
 
         try {
-            System.out.println("Initialisation de la vue médecin...");
-
             // Créer la vue
             VueMedecin vueMedecin = new VueMedecin(utilisateur);
 
             // Créer et stocker le contrôleur
             controleurMedecin = new ControleurMedecin(vueMedecin);
-
-            // Appeler directement la méthode publique
-            // si elle existe dans le contrôleur
-            if (controleurMedecin != null) {
-                controleurMedecin.attacherEcouteursFormulaire();
-            }
 
             // Ajouter la vue au panneau
             contentPanel.add(vueMedecin, BorderLayout.CENTER);
@@ -447,37 +725,299 @@ public class VuePrincipale extends JFrame {
         }
     }
 
-    private void showAddMedecinForm() {
-        try {
-            // Vérifier si la vue médecin est déjà affichée, sinon l'afficher
-            if (contentPanel.getComponentCount() == 0 || !(contentPanel.getComponent(0) instanceof VueMedecin)) {
-                showMedecinList();
-            }
+    public void showAddMedecinForm() {
+        // Afficher un formulaire d'ajout de médecin
+        JDialog dialog = new JDialog(this, "Ajouter un médecin", true);
+        dialog.setSize(400, 400);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout());
 
-            // Récupérer la vue médecin
-            if (contentPanel.getComponent(0) instanceof VueMedecin) {
-                VueMedecin vueMedecin = (VueMedecin) contentPanel.getComponent(0);
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-                // Afficher le formulaire d'ajout
-                vueMedecin.afficherFormulaireAjout();
+        // Nom
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panel.add(new JLabel("Nom:"), gbc);
 
-                // Réattacher les écouteurs aux boutons du formulaire
-                if (controleurMedecin != null) {
-                    controleurMedecin.attacherEcouteursFormulaire();
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField tfNom = new JTextField(20);
+        panel.add(tfNom, gbc);
+
+        // Prénom
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Prénom:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField tfPrenom = new JTextField(20);
+        panel.add(tfPrenom, gbc);
+
+        // Login
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Login:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField tfLogin = new JTextField(20);
+        panel.add(tfLogin, gbc);
+
+        // Mot de passe
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Mot de passe:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JPasswordField pfPassword = new JPasswordField(20);
+        panel.add(pfPassword, gbc);
+
+        // Spécialité
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Spécialité:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField tfSpecialite = new JTextField(20);
+        panel.add(tfSpecialite, gbc);
+
+        // Horaires
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Horaires:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField tfHoraires = new JTextField(20);
+        panel.add(tfHoraires, gbc);
+
+        // Boutons
+        JPanel panelBoutons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton btnValider = new JButton("Valider");
+        JButton btnAnnuler = new JButton("Annuler");
+
+        btnValider.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (tfNom.getText().trim().isEmpty() ||
+                        tfPrenom.getText().trim().isEmpty() ||
+                        tfLogin.getText().trim().isEmpty() ||
+                        pfPassword.getPassword().length == 0 ||
+                        tfSpecialite.getText().trim().isEmpty() ||
+                        tfHoraires.getText().trim().isEmpty()) {
+
+                    JOptionPane.showMessageDialog(dialog,
+                            "Veuillez remplir tous les champs",
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
                 }
 
-                System.out.println("Formulaire d'ajout de médecin affiché");
-            } else {
-                System.err.println("Impossible de récupérer la vue médecin");
+                boolean result = false;
+
+                try {
+                    result = ControleurMedecin.ajouterMedecin(
+                            tfNom.getText().trim(),
+                            tfPrenom.getText().trim(),
+                            tfLogin.getText().trim(),
+                            new String(pfPassword.getPassword()),
+                            tfSpecialite.getText().trim(),
+                            tfHoraires.getText().trim()
+                    );
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Erreur lors de l'ajout du médecin: " + ex.getMessage(),
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                if (result) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Médecin ajouté avec succès",
+                            "Ajout réussi",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    dialog.dispose();
+
+                    // Rafraîchir la liste si elle est affichée
+                    if (contentPanel.getComponentCount() > 0 && contentPanel.getComponent(0) instanceof VueMedecin) {
+                        showMedecinList();
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Erreur lors de l'ajout du médecin",
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
+                }
             }
-        } catch (Exception e) {
-            System.err.println("Erreur lors de l'affichage du formulaire d'ajout médecin: " + e.getMessage());
-            e.printStackTrace();
+        });
+
+        btnAnnuler.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dialog.dispose();
+            }
+        });
+
+        panelBoutons.add(btnValider);
+        panelBoutons.add(btnAnnuler);
+
+        dialog.add(panel, BorderLayout.CENTER);
+        dialog.add(panelBoutons, BorderLayout.SOUTH);
+        dialog.setVisible(true);
+
+        System.out.println("Formulaire d'ajout de médecin affiché");
+    }
+
+    public void showEditMedecinForm(int id) {
+        // Rechercher le médecin
+        Medecin medecin = Medecin.getMedecinById(id);
+        if (medecin == null) {
             JOptionPane.showMessageDialog(this,
-                    "Erreur lors de l'affichage du formulaire d'ajout médecin: " + e.getMessage(),
+                    "Médecin introuvable",
                     "Erreur",
                     JOptionPane.ERROR_MESSAGE);
+            return;
         }
+
+        // Afficher un formulaire de modification de médecin
+        JDialog dialog = new JDialog(this, "Modifier un médecin", true);
+        dialog.setSize(400, 350);
+        dialog.setLocationRelativeTo(this);
+        dialog.setLayout(new BorderLayout());
+
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Nom
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panel.add(new JLabel("Nom:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField tfNom = new JTextField(medecin.getNom(), 20);
+        panel.add(tfNom, gbc);
+
+        // Prénom
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Prénom:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField tfPrenom = new JTextField(medecin.getPrenom(), 20);
+        panel.add(tfPrenom, gbc);
+
+        // Spécialité
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Spécialité:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField tfSpecialite = new JTextField(medecin.getSpecialite(), 20);
+        panel.add(tfSpecialite, gbc);
+
+        // Horaires
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Horaires:"), gbc);
+
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        JTextField tfHoraires = new JTextField(medecin.getHoraires(), 20);
+        panel.add(tfHoraires, gbc);
+
+        // Boutons
+        JPanel panelBoutons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JButton btnValider = new JButton("Valider");
+        JButton btnAnnuler = new JButton("Annuler");
+
+        btnValider.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (tfNom.getText().trim().isEmpty() ||
+                        tfPrenom.getText().trim().isEmpty() ||
+                        tfSpecialite.getText().trim().isEmpty() ||
+                        tfHoraires.getText().trim().isEmpty()) {
+
+                    JOptionPane.showMessageDialog(dialog,
+                            "Veuillez remplir tous les champs",
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                boolean result = false;
+
+                try {
+                    result = Medecin.modifierMedecin(
+                            id,
+                            tfNom.getText().trim(),
+                            tfPrenom.getText().trim(),
+                            tfSpecialite.getText().trim(),
+                            tfHoraires.getText().trim()
+                    );
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Erreur lors de la modification du médecin: " + ex.getMessage(),
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                if (result) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Médecin modifié avec succès",
+                            "Modification réussie",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    dialog.dispose();
+
+                    // Rafraîchir la liste si elle est affichée
+                    if (contentPanel.getComponentCount() > 0 && contentPanel.getComponent(0) instanceof VueMedecin) {
+                        showMedecinList();
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Erreur lors de la modification du médecin",
+                            "Erreur",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        btnAnnuler.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dialog.dispose();
+            }
+        });
+
+        panelBoutons.add(btnValider);
+        panelBoutons.add(btnAnnuler);
+
+        dialog.add(panel, BorderLayout.CENTER);
+        dialog.add(panelBoutons, BorderLayout.SOUTH);
+        dialog.setVisible(true);
+
+        System.out.println("Formulaire de modification de médecin affiché");
     }
 
     private void showSecretaireList() {
@@ -645,9 +1185,11 @@ public class VuePrincipale extends JFrame {
             // Créer et stocker le contrôleur
             controleurRendezVous = new ControleurRendezVous(vueRendezVous);
 
-            // S'assurer que le contrôleur attache correctement les écouteurs aux boutons du formulaire
-            // Cette méthode doit être ajoutée à ControleurRendezVous
-            controleurRendezVous.getClass().getDeclaredMethod("attacherEcouteursFormulaire").invoke(controleurRendezVous);
+            // IMPORTANT: Lier le contrôleur à la vue
+            vueRendezVous.setControleur(controleurRendezVous);
+
+            // Initialiser les écouteurs du formulaire
+            controleurRendezVous.attacherEcouteursFormulaire();
 
             // Ajouter la vue au panneau
             contentPanel.add(vueRendezVous, BorderLayout.CENTER);
@@ -672,13 +1214,19 @@ public class VuePrincipale extends JFrame {
         }
 
         // Récupérer la vue rendez-vous
-        VueRendezVous vueRendezVous = (VueRendezVous) contentPanel.getComponent(0);
+        if (contentPanel.getComponent(0) instanceof VueRendezVous) {
+            VueRendezVous vueRendezVous = (VueRendezVous) contentPanel.getComponent(0);
 
-        // Afficher le formulaire d'ajout
-        vueRendezVous.afficherFormulaireAjout();
+            // Déclencher l'action d'ajout via le contrôleur
+            if (vueRendezVous.getBtnAjouter() != null) {
+                vueRendezVous.getBtnAjouter().doClick();
+            }
 
-        System.out.println("Formulaire d'ajout de rendez-vous affiché");
+            System.out.println("Formulaire d'ajout de rendez-vous déclenché");
+        }
     }
+
+    // Voici les méthodes modifiées dans VuePrincipale.java pour la gestion des rendez-vous
 
     private void exportRendezVousToExcel() {
         JFileChooser fileChooser = new JFileChooser();
@@ -695,9 +1243,9 @@ public class VuePrincipale extends JFrame {
 
             try {
                 // Récupérer la liste des rendez-vous
-                List<RendezVous> rendezVousList = RendezVousModel.getTousRendezVous();
+                List<RendezVous> rendezVousList = RendezVous.getTousRendezVous();
 
-                boolean result = RendezVousModel.exporterExcel(rendezVousList, cheminFichier);
+                boolean result = RendezVous.exporterExcel(rendezVousList, cheminFichier);
 
                 if (result) {
                     JOptionPane.showMessageDialog(this,
@@ -734,9 +1282,9 @@ public class VuePrincipale extends JFrame {
 
             try {
                 // Récupérer la liste des rendez-vous
-                List<RendezVous> rendezVousList = RendezVousModel.getTousRendezVous();
+                List<RendezVous> rendezVousList = RendezVous.getTousRendezVous();
 
-                boolean result = RendezVousModel.exporterPDF(rendezVousList, cheminFichier);
+                boolean result = RendezVous.exporterPDF(rendezVousList, cheminFichier);
 
                 if (result) {
                     JOptionPane.showMessageDialog(this,

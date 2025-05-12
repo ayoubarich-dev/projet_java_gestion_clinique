@@ -1,6 +1,8 @@
 package fr.clinique.model;
 
 import fr.clinique.observer.Observer;
+import fr.clinique.util.ExcelExporter;
+import fr.clinique.util.PDFExporter;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -289,18 +291,50 @@ public class RendezVous implements Model<RendezVous> {
             ResultSet rs = stmt.executeQuery(query);
 
             while (rs.next()) {
-                Patient patient = (Patient) new Patient().rechercherParId(rs.getInt("id_patient"));
-                Medecin medecin = Medecin.rechercherParIdUtilisateur(rs.getInt("id_medecin"));
+                // Récupérer le patient
+                Patient patient = Patient.getPatientById(rs.getInt("id_patient"));
 
-                RendezVous rendezVous = new RendezVous(
-                    rs.getInt("id"),
-                    patient,
-                    medecin,
-                    rs.getDate("date"),
-                    rs.getString("heure"),
-                    rs.getString("motif")
-                );
-                rendezVousList.add(rendezVous);
+                // IMPORTANT: Corriger la récupération du médecin
+                // id_medecin dans la table rendez_vous correspond à l'ID dans la table medecins
+                // Récupérer le médecin directement par son ID
+                Medecin medecin = null;
+                int medecinId = rs.getInt("id_medecin");
+
+                // Requête pour récupérer le médecin par son ID
+                String medecinQuery = "SELECT m.*, u.* FROM medecins m " +
+                        "JOIN utilisateurs u ON m.id_utilisateur = u.id " +
+                        "WHERE m.id = ?";
+                PreparedStatement psMedecin = connection.prepareStatement(medecinQuery);
+                psMedecin.setInt(1, medecinId);
+                ResultSet rsMedecin = psMedecin.executeQuery();
+
+                if (rsMedecin.next()) {
+                    medecin = new Medecin(
+                            rsMedecin.getInt("u.id"),
+                            rsMedecin.getString("u.nom"),
+                            rsMedecin.getString("u.prenom"),
+                            rsMedecin.getString("u.login"),
+                            rsMedecin.getString("u.password"),
+                            rsMedecin.getString("m.specialite"),
+                            rsMedecin.getString("m.horaires")
+                    );
+                    // Définir l'ID du médecin (table medecins)
+                    medecin.setId(medecinId);
+                }
+                rsMedecin.close();
+                psMedecin.close();
+
+                if (patient != null && medecin != null) {
+                    RendezVous rendezVous = new RendezVous(
+                            rs.getInt("id"),
+                            patient,
+                            medecin,
+                            rs.getDate("date"),
+                            rs.getString("heure"),
+                            rs.getString("motif")
+                    );
+                    rendezVousList.add(rendezVous);
+                }
             }
 
             rs.close();
@@ -330,12 +364,12 @@ public class RendezVous implements Model<RendezVous> {
                 Medecin medecin = Medecin.rechercherParIdUtilisateur(rs.getInt("id_medecin"));
 
                 RendezVous rendezVous = new RendezVous(
-                    rs.getInt("id"),
-                    patient,
-                    medecin,
-                    rs.getDate("date"),
-                    rs.getString("heure"),
-                    rs.getString("motif")
+                        rs.getInt("id"),
+                        patient,
+                        medecin,
+                        rs.getDate("date"),
+                        rs.getString("heure"),
+                        rs.getString("motif")
                 );
                 rs.close();
                 ps.close();
@@ -355,7 +389,7 @@ public class RendezVous implements Model<RendezVous> {
      * @param idMedecin L'identifiant du médecin
      * @return Liste des rendez-vous du médecin
      */
-    public static List<RendezVous> afficherParMedecin(int idMedecin) {
+    public static List<RendezVous> getRendezVousParMedecin(int idMedecin) {
         List<RendezVous> rendezVousList = new ArrayList<>();
         Connection connection = DatabaseConnexion.getConnexion();
         String query = "SELECT * FROM rendez_vous WHERE id_medecin = ?";
@@ -366,18 +400,46 @@ public class RendezVous implements Model<RendezVous> {
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-                Patient patient = (Patient) new Patient().rechercherParId(rs.getInt("id_patient"));
-                Medecin medecin = Medecin.rechercherParIdUtilisateur(rs.getInt("id_medecin"));
+                // Récupérer le patient
+                Patient patient = Patient.getPatientById(rs.getInt("id_patient"));
 
-                RendezVous rendezVous = new RendezVous(
-                    rs.getInt("id"),
-                    patient,
-                    medecin,
-                    rs.getDate("date"),
-                    rs.getString("heure"),
-                    rs.getString("motif")
-                );
-                rendezVousList.add(rendezVous);
+                // Récupérer le médecin
+                Medecin medecin = null;
+                int medecinId = rs.getInt("id_medecin");
+
+                String medecinQuery = "SELECT m.*, u.* FROM medecins m " +
+                        "JOIN utilisateurs u ON m.id_utilisateur = u.id " +
+                        "WHERE m.id = ?";
+                PreparedStatement psMedecin = connection.prepareStatement(medecinQuery);
+                psMedecin.setInt(1, medecinId);
+                ResultSet rsMedecin = psMedecin.executeQuery();
+
+                if (rsMedecin.next()) {
+                    medecin = new Medecin(
+                            rsMedecin.getInt("u.id"),
+                            rsMedecin.getString("u.nom"),
+                            rsMedecin.getString("u.prenom"),
+                            rsMedecin.getString("u.login"),
+                            rsMedecin.getString("u.password"),
+                            rsMedecin.getString("m.specialite"),
+                            rsMedecin.getString("m.horaires")
+                    );
+                    medecin.setId(medecinId);
+                }
+                rsMedecin.close();
+                psMedecin.close();
+
+                if (patient != null && medecin != null) {
+                    RendezVous rendezVous = new RendezVous(
+                            rs.getInt("id"),
+                            patient,
+                            medecin,
+                            rs.getDate("date"),
+                            rs.getString("heure"),
+                            rs.getString("motif")
+                    );
+                    rendezVousList.add(rendezVous);
+                }
             }
 
             rs.close();
@@ -386,5 +448,148 @@ public class RendezVous implements Model<RendezVous> {
             e.printStackTrace();
         }
         return rendezVousList;
+    }
+
+    /**
+     * Récupère tous les rendez-vous.
+     * @return Liste de tous les rendez-vous
+     */
+    public static List<RendezVous> getTousRendezVous() {
+        RendezVous rendezVous = new RendezVous();
+        return rendezVous.afficherTous();
+    }
+
+    /**
+     * Recherche un rendez-vous par son identifiant.
+     * @param id L'identifiant du rendez-vous
+     * @return Le rendez-vous trouvé ou null si aucun rendez-vous ne correspond
+     */
+    public static RendezVous getRendezVousById(int id) {
+        RendezVous rendezVous = new RendezVous();
+        return rendezVous.rechercherParId(id);
+    }
+
+    /**
+     * Ajoute un nouveau rendez-vous.
+     * @param idPatient L'identifiant du patient
+     * @param idMedecin L'identifiant du médecin
+     * @param date La date du rendez-vous
+     * @param heure L'heure du rendez-vous
+     * @param motif Le motif du rendez-vous
+     * @return true si l'ajout a réussi, false sinon
+     */
+    public static boolean ajouterRendezVous(int idPatient, int idMedecin, Date date, String heure, String motif) {
+        Patient patient = Patient.getPatientById(idPatient);
+        Medecin medecin = Medecin.getMedecinById(idMedecin);
+
+        if (patient == null || medecin == null) {
+            return false;
+        }
+
+        // Récupérer l'ID du médecin dans la table medecins (pas l'ID utilisateur)
+        int medecinTableId = recupererIdMedecinDansTableMedecins(medecin.getId());
+
+        Connection connection = DatabaseConnexion.getConnexion();
+        try {
+            String query = "INSERT INTO rendez_vous (id_patient, id_medecin, date, heure, motif) VALUES (?, ?, ?, ?, ?)";
+            PreparedStatement ps = connection.prepareStatement(query);
+            ps.setInt(1, idPatient);
+            ps.setInt(2, medecinTableId); // Utiliser l'ID de la table medecins
+            ps.setDate(3, new java.sql.Date(date.getTime()));
+            ps.setString(4, heure);
+            ps.setString(5, motif);
+
+            int result = ps.executeUpdate();
+            ps.close();
+
+            if (result > 0) {
+                // Notifier le médecin
+                RendezVous rendezVous = new RendezVous(patient, medecin, date, heure, motif);
+                rendezVous.ajouterObservateur(medecin);
+                rendezVous.notifierObservateurs();
+                return true;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    /**
+     * Modifie un rendez-vous existant.
+     * @param id L'identifiant du rendez-vous
+     * @param idPatient L'identifiant du patient
+     * @param idMedecin L'identifiant du médecin
+     * @param date La nouvelle date du rendez-vous
+     * @param heure La nouvelle heure du rendez-vous
+     * @param motif Le nouveau motif du rendez-vous
+     * @return true si la modification a réussi, false sinon
+     */
+    public static boolean modifierRendezVous(int id, int idPatient, int idMedecin, Date date, String heure, String motif) {
+        Patient patient = Patient.getPatientById(idPatient);
+        Medecin medecin = Medecin.getMedecinById(idMedecin);
+
+        if (patient == null || medecin == null) {
+            return false;
+        }
+
+        RendezVous rendezVous = new RendezVous(id, patient, medecin, date, heure, motif);
+        return rendezVous.enregistrer();
+    }
+
+    /**
+     * Supprime un rendez-vous.
+     * @param id L'identifiant du rendez-vous
+     * @return true si la suppression a réussi, false sinon
+     */
+    public static boolean supprimerRendezVous(int id) {
+        RendezVous rendezVous = getRendezVousById(id);
+        if (rendezVous == null) {
+            return false;
+        }
+
+        return rendezVous.supprimer();
+    }
+
+    /**
+     * Exporte les rendez-vous au format Excel.
+     * @param rendezVous La liste des rendez-vous à exporter
+     * @param cheminFichier Le chemin du fichier de destination
+     * @return true si l'export a réussi, false sinon
+     */
+
+    private static int recupererIdMedecinDansTableMedecins(int idUtilisateur) {
+        Connection connection = DatabaseConnexion.getConnexion();
+        String query = "SELECT id FROM medecins WHERE id_utilisateur = ?";
+        try {
+            PreparedStatement ps = connection.prepareStatement(query);
+            ps.setInt(1, idUtilisateur);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return rs.getInt("id");
+            }
+
+            rs.close();
+            ps.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+    public static boolean exporterExcel(List<RendezVous> rendezVous, String cheminFichier) {
+        ExcelExporter exporter = new ExcelExporter();
+        return exporter.exporter(rendezVous, cheminFichier);
+    }
+
+    /**
+     * Exporte les rendez-vous au format PDF.
+     * @param rendezVous La liste des rendez-vous à exporter
+     * @param cheminFichier Le chemin du fichier de destination
+     * @return true si l'export a réussi, false sinon
+     */
+    public static boolean exporterPDF(List<RendezVous> rendezVous, String cheminFichier) {
+        PDFExporter exporter = new PDFExporter();
+        return exporter.exporter(rendezVous, cheminFichier);
     }
 }

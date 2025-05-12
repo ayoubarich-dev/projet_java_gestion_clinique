@@ -131,8 +131,6 @@ public class Medecin extends Utilisateur implements Observer {
      * Enregistre le médecin dans la base de données.
      * @return true si l'enregistrement a réussi, false sinon
      */
-
-
     public boolean enregistrer() {
         System.out.println("Début de la méthode enregistrer() pour le médecin");
 
@@ -242,13 +240,13 @@ public class Medecin extends Utilisateur implements Observer {
 
                 if (medecinRs.next()) {
                     Medecin medecin = new Medecin(
-                        userRs.getInt("id"),
-                        userRs.getString("nom"),
-                        userRs.getString("prenom"),
-                        userRs.getString("login"),
-                        userRs.getString("password"),
-                        medecinRs.getString("specialite"),
-                        medecinRs.getString("horaires")
+                            userRs.getInt("id"),
+                            userRs.getString("nom"),
+                            userRs.getString("prenom"),
+                            userRs.getString("login"),
+                            userRs.getString("password"),
+                            medecinRs.getString("specialite"),
+                            medecinRs.getString("horaires")
                     );
 
                     medecinRs.close();
@@ -275,27 +273,27 @@ public class Medecin extends Utilisateur implements Observer {
      * Récupère tous les médecins de la base de données.
      * @return Liste de tous les médecins
      */
-    public static List<Medecin> afficherTousMedecins() {
+    public static List<Medecin> getAllMedecins() {
         List<Medecin> medecins = new ArrayList<>();
         Connection connection = DatabaseConnexion.getConnexion();
 
         try {
             String query = "SELECT u.*, m.specialite, m.horaires FROM utilisateurs u " +
-                          "JOIN medecins m ON u.id = m.id_utilisateur " +
-                          "WHERE u.role = 'MEDECIN'";
+                    "JOIN medecins m ON u.id = m.id_utilisateur " +
+                    "WHERE u.role = 'MEDECIN'";
 
             Statement stmt = connection.createStatement();
             ResultSet rs = stmt.executeQuery(query);
 
             while (rs.next()) {
                 Medecin medecin = new Medecin(
-                    rs.getInt("id"),
-                    rs.getString("nom"),
-                    rs.getString("prenom"),
-                    rs.getString("login"),
-                    rs.getString("password"),
-                    rs.getString("specialite"),
-                    rs.getString("horaires")
+                        rs.getInt("id"),
+                        rs.getString("nom"),
+                        rs.getString("prenom"),
+                        rs.getString("login"),
+                        rs.getString("password"),
+                        rs.getString("specialite"),
+                        rs.getString("horaires")
                 );
 
                 medecins.add(medecin);
@@ -308,6 +306,43 @@ public class Medecin extends Utilisateur implements Observer {
         }
 
         return medecins;
+    }
+
+    /**
+     * Recherche un médecin par son identifiant.
+     * @param id L'identifiant du médecin
+     * @return Le médecin trouvé ou null si aucun médecin ne correspond
+     */
+    public static Medecin getMedecinById(int id) {
+        Utilisateur utilisateur = new Utilisateur();
+        Personne personne = utilisateur.rechercherParId(id);
+        if (personne instanceof Medecin) {
+            return (Medecin) personne;
+        }
+        return null;
+    }
+
+    /**
+     * Modifie un médecin existant.
+     * @param id L'identifiant du médecin
+     * @param nom Le nouveau nom du médecin
+     * @param prenom Le nouveau prénom du médecin
+     * @param specialite La nouvelle spécialité du médecin
+     * @param horaires Les nouveaux horaires du médecin
+     * @return true si la modification a réussi, false sinon
+     */
+    public static boolean modifierMedecin(int id, String nom, String prenom, String specialite, String horaires) {
+        Medecin medecin = getMedecinById(id);
+        if (medecin == null) {
+            return false;
+        }
+
+        medecin.setNom(nom);
+        medecin.setPrenom(prenom);
+        medecin.setSpecialite(specialite);
+        medecin.setHoraires(horaires);
+
+        return medecin.enregistrer();
     }
 
     /**

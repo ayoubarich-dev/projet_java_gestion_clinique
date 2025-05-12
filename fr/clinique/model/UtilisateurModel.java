@@ -29,7 +29,7 @@ public class UtilisateurModel {
      * @return Liste de tous les médecins
      */
     public static List<Medecin> getMedecins() {
-        return Medecin.afficherTousMedecins();
+        return Medecin.getAllMedecins();
     }
     
     /**

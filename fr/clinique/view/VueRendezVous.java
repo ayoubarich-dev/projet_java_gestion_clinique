@@ -1,5 +1,6 @@
 package fr.clinique.view;
 
+import fr.clinique.controller.ControleurRendezVous;
 import fr.clinique.model.Medecin;
 import fr.clinique.model.Patient;
 import fr.clinique.model.RendezVous;
@@ -32,6 +33,9 @@ public class VueRendezVous extends JPanel {
     private JButton btnValider, btnAnnuler;
     private boolean modeAjout = true;
     private int idRendezVousSelectionne = -1;
+
+    // Contrôleur
+    private ControleurRendezVous controleur;
 
     public VueRendezVous(Utilisateur utilisateur) {
         this.utilisateur = utilisateur;
@@ -102,7 +106,6 @@ public class VueRendezVous extends JPanel {
     }
 
     // Méthodes d'affichage
-   // Méthodes d'affichage
     public void afficherDonnees(List<RendezVous> rendezVousList) {
         modelTable.setRowCount(0);
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
@@ -130,6 +133,11 @@ public class VueRendezVous extends JPanel {
 
         dialogFormulaire.setTitle("Ajouter un rendez-vous");
         dialogFormulaire.setVisible(true);
+
+        // Attacher les écouteurs après l'affichage
+        if (controleur != null) {
+            controleur.attacherEcouteursFormulaire();
+        }
     }
 
     public void afficherFormulaireModification(int id) {
@@ -138,9 +146,18 @@ public class VueRendezVous extends JPanel {
 
         dialogFormulaire.setTitle("Modifier un rendez-vous");
         dialogFormulaire.setVisible(true);
+
+        // Attacher les écouteurs après l'affichage
+        if (controleur != null) {
+            controleur.attacherEcouteursFormulaire();
+        }
     }
 
     public void remplirComboBoxes(List<Patient> patients, List<Medecin> medecins) {
+        System.out.println("=== Remplissage des ComboBoxes ===");
+        System.out.println("Nombre de patients reçus: " + patients.size());
+        System.out.println("Nombre de médecins reçus: " + medecins.size());
+
         // Vider les combobox
         cbPatient.removeAllItems();
         cbMedecin.removeAllItems();
@@ -148,11 +165,16 @@ public class VueRendezVous extends JPanel {
         // Remplir avec les données actuelles
         for (Patient patient : patients) {
             cbPatient.addItem(patient);
+            System.out.println("Ajout patient: " + patient.getNom() + " " + patient.getPrenom());
         }
 
         for (Medecin medecin : medecins) {
             cbMedecin.addItem(medecin);
+            System.out.println("Ajout médecin: " + medecin.getNom() + " " + medecin.getPrenom());
         }
+
+        System.out.println("ComboBox patient - Nombre d'items: " + cbPatient.getItemCount());
+        System.out.println("ComboBox médecin - Nombre d'items: " + cbMedecin.getItemCount());
     }
 
     private void creerFormulaire() {
@@ -182,6 +204,18 @@ public class VueRendezVous extends JPanel {
             gbc.gridx = 1;
             gbc.weightx = 1;
             cbPatient = new JComboBox<>();
+            // IMPORTANT: Définir le renderer pour afficher correctement les patients
+            cbPatient.setRenderer(new DefaultListCellRenderer() {
+                @Override
+                public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                    super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                    if (value instanceof Patient) {
+                        Patient patient = (Patient) value;
+                        setText(patient.getPrenom() + " " + patient.getNom());
+                    }
+                    return this;
+                }
+            });
             panel.add(cbPatient, gbc);
 
             // Médecin
@@ -193,6 +227,18 @@ public class VueRendezVous extends JPanel {
             gbc.gridx = 1;
             gbc.weightx = 1;
             cbMedecin = new JComboBox<>();
+            // IMPORTANT: Définir le renderer pour afficher correctement les médecins
+            cbMedecin.setRenderer(new DefaultListCellRenderer() {
+                @Override
+                public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                    super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                    if (value instanceof Medecin) {
+                        Medecin medecin = (Medecin) value;
+                        setText("Dr. " + medecin.getPrenom() + " " + medecin.getNom() + " (" + medecin.getSpecialite() + ")");
+                    }
+                    return this;
+                }
+            });
             panel.add(cbMedecin, gbc);
 
             // Date
@@ -235,23 +281,9 @@ public class VueRendezVous extends JPanel {
             btnValider = new JButton("Valider");
             btnAnnuler = new JButton("Annuler");
 
-            // Ajout de débogage sur les boutons
-            btnValider.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    System.out.println("DEBUG: Bouton Valider du formulaire rendez-vous cliqué");
-                }
-            });
-
-            btnAnnuler.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    System.out.println("DEBUG: Bouton Annuler du formulaire rendez-vous cliqué");
-                    if (dialogFormulaire != null) {
-                        dialogFormulaire.dispose();
-                    }
-                }
-            });
+            System.out.println("Création des boutons du formulaire");
+            System.out.println("btnValider créé: " + (btnValider != null));
+            System.out.println("btnAnnuler créé: " + (btnAnnuler != null));
 
             panelBoutons.add(btnValider);
             panelBoutons.add(btnAnnuler);
@@ -284,7 +316,7 @@ public class VueRendezVous extends JPanel {
         tfHeure.setText(rv.getHeure());
         tfMotif.setText(rv.getMotif());
     }
-    
+
     // Méthodes pour le contrôleur
     public void afficherMessage(String message, String titre, int messageType) {
         JOptionPane.showMessageDialog(this, message, titre, messageType);
@@ -294,11 +326,16 @@ public class VueRendezVous extends JPanel {
         return JOptionPane.showConfirmDialog(this, message, titre, JOptionPane.YES_NO_OPTION);
     }
 
+    // Setter pour le contrôleur
+    public void setControleur(ControleurRendezVous controleur) {
+        this.controleur = controleur;
+    }
+
     // Getters pour les composants d'interface utilisateur
     public Utilisateur getUtilisateur() {
         return utilisateur;
     }
-    
+
     public JTable getTableRendezVous() {
         return tableRendezVous;
     }
@@ -352,10 +389,12 @@ public class VueRendezVous extends JPanel {
     }
 
     public JButton getBtnValider() {
+        System.out.println("getBtnValider() appelé - retourne: " + btnValider);
         return btnValider;
     }
 
     public JButton getBtnAnnuler() {
+        System.out.println("getBtnAnnuler() appelé - retourne: " + btnAnnuler);
         return btnAnnuler;
     }
 

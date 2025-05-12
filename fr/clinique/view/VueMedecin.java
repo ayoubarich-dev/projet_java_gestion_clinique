@@ -7,8 +7,6 @@ import fr.clinique.model.Utilisateur;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.util.List;
 
 public class VueMedecin extends JPanel {
@@ -19,9 +17,10 @@ public class VueMedecin extends JPanel {
     private JTextField tfRecherche;
     private JButton btnRecherche, btnAjouter, btnModifier, btnSupprimer, btnRafraichir;
 
-    // Formulaire d'ajout/modification
+    // Composants du formulaire
     private JDialog dialogFormulaire;
-    private JTextField tfNom, tfPrenom, tfSpecialite, tfHoraires, tfLogin, tfPassword;
+    private JTextField tfNom, tfPrenom, tfSpecialite, tfHoraires, tfLogin;
+    private JPasswordField pfPassword;
     private JButton btnValider, btnAnnuler;
     private boolean modeAjout = true;
     private int idMedecinSelectionne = -1;
@@ -83,79 +82,9 @@ public class VueMedecin extends JPanel {
         }
     }
 
-    // Méthodes d'affichage et de mise à jour
-    public void afficherDonnees(List<Medecin> medecins) {
-        System.out.println("Affichage des données médecins: " + medecins.size() + " médecins");
-        modelTable.setRowCount(0);
-
-        for (Medecin medecin : medecins) {
-            modelTable.addRow(new Object[] {
-                    medecin.getId(),
-                    medecin.getNom(),
-                    medecin.getPrenom(),
-                    medecin.getSpecialite(),
-                    medecin.getHoraires()
-            });
-        }
-    }
-
-    public void afficherFormulaireAjout() {
-        System.out.println("Affichage du formulaire d'ajout médecin");
-        modeAjout = true;
-        creerFormulaire();
-
-        // Vider les champs
-        tfNom.setText("");
-        tfPrenom.setText("");
-        tfSpecialite.setText("");
-        tfHoraires.setText("");
-        tfLogin.setText("");
-        tfPassword.setText("");
-
-        // Le panneau de login/password n'est visible qu'en mode ajout
-        dialogFormulaire.getContentPane().getComponent(0).setVisible(true);
-
-        dialogFormulaire.setTitle("Ajouter un médecin");
-        dialogFormulaire.setVisible(true);
-
-        System.out.println("Formulaire d'ajout médecin affiché");
-    }
-
-    public void afficherFormulaireModification(int id) {
-        System.out.println("Affichage du formulaire de modification médecin pour id=" + id);
-        modeAjout = false;
-
-        // Rechercher le médecin dans le tableau
-        for (int i = 0; i < modelTable.getRowCount(); i++) {
-            if ((int) modelTable.getValueAt(i, 0) == id) {
-                creerFormulaire();
-
-                tfNom.setText((String) modelTable.getValueAt(i, 1));
-                tfPrenom.setText((String) modelTable.getValueAt(i, 2));
-                tfSpecialite.setText((String) modelTable.getValueAt(i, 3));
-                tfHoraires.setText((String) modelTable.getValueAt(i, 4));
-
-                // Le panneau de login/password n'est pas visible en mode modification
-                dialogFormulaire.getContentPane().getComponent(0).setVisible(false);
-
-                dialogFormulaire.setTitle("Modifier un médecin");
-                dialogFormulaire.setVisible(true);
-
-                System.out.println("Formulaire de modification médecin affiché");
-                return;
-            }
-        }
-
-        JOptionPane.showMessageDialog(this,
-                "Médecin introuvable",
-                "Erreur",
-                JOptionPane.ERROR_MESSAGE);
-    }
-
+    // Méthode pour créer le formulaire d'ajout/modification
     private void creerFormulaire() {
-        System.out.println("Création du formulaire médecin");
         if (dialogFormulaire == null) {
-            // Créer la boîte de dialogue une seule fois
             Window window = SwingUtilities.getWindowAncestor(this);
             if (window instanceof JFrame) {
                 dialogFormulaire = new JDialog((JFrame) window, "", true);
@@ -167,7 +96,55 @@ public class VueMedecin extends JPanel {
             dialogFormulaire.setLocationRelativeTo(window);
             dialogFormulaire.setLayout(new BorderLayout());
 
-            // Panel pour les informations de connexion (uniquement pour l'ajout)
+            JPanel panel = new JPanel(new GridBagLayout());
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(5, 5, 5, 5);
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+
+            // Nom
+            gbc.gridx = 0;
+            gbc.gridy = 0;
+            panel.add(new JLabel("Nom:"), gbc);
+
+            gbc.gridx = 1;
+            gbc.weightx = 1;
+            tfNom = new JTextField(20);
+            panel.add(tfNom, gbc);
+
+            // Prénom
+            gbc.gridx = 0;
+            gbc.gridy = 1;
+            gbc.weightx = 0;
+            panel.add(new JLabel("Prénom:"), gbc);
+
+            gbc.gridx = 1;
+            gbc.weightx = 1;
+            tfPrenom = new JTextField(20);
+            panel.add(tfPrenom, gbc);
+
+            // Spécialité
+            gbc.gridx = 0;
+            gbc.gridy = 2;
+            gbc.weightx = 0;
+            panel.add(new JLabel("Spécialité:"), gbc);
+
+            gbc.gridx = 1;
+            gbc.weightx = 1;
+            tfSpecialite = new JTextField(20);
+            panel.add(tfSpecialite, gbc);
+
+            // Horaires
+            gbc.gridx = 0;
+            gbc.gridy = 3;
+            gbc.weightx = 0;
+            panel.add(new JLabel("Horaires:"), gbc);
+
+            gbc.gridx = 1;
+            gbc.weightx = 1;
+            tfHoraires = new JTextField(20);
+            panel.add(tfHoraires, gbc);
+
+            // Section login/password (uniquement pour l'ajout)
             JPanel panelLogin = new JPanel(new GridBagLayout());
             panelLogin.setBorder(BorderFactory.createTitledBorder("Informations de connexion"));
             GridBagConstraints gbcLogin = new GridBagConstraints();
@@ -192,87 +169,92 @@ public class VueMedecin extends JPanel {
 
             gbcLogin.gridx = 1;
             gbcLogin.weightx = 1;
-            tfPassword = new JPasswordField(20);
-            panelLogin.add(tfPassword, gbcLogin);
-
-            // Panel pour les informations du médecin
-            JPanel panelInfo = new JPanel(new GridBagLayout());
-            panelInfo.setBorder(BorderFactory.createTitledBorder("Informations du médecin"));
-            GridBagConstraints gbc = new GridBagConstraints();
-            gbc.insets = new Insets(5, 5, 5, 5);
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-
-            // Nom
-            gbc.gridx = 0;
-            gbc.gridy = 0;
-            panelInfo.add(new JLabel("Nom:"), gbc);
-
-            gbc.gridx = 1;
-            gbc.weightx = 1;
-            tfNom = new JTextField(20);
-            panelInfo.add(tfNom, gbc);
-
-            // Prénom
-            gbc.gridx = 0;
-            gbc.gridy = 1;
-            gbc.weightx = 0;
-            panelInfo.add(new JLabel("Prénom:"), gbc);
-
-            gbc.gridx = 1;
-            gbc.weightx = 1;
-            tfPrenom = new JTextField(20);
-            panelInfo.add(tfPrenom, gbc);
-
-            // Spécialité
-            gbc.gridx = 0;
-            gbc.gridy = 2;
-            gbc.weightx = 0;
-            panelInfo.add(new JLabel("Spécialité:"), gbc);
-
-            gbc.gridx = 1;
-            gbc.weightx = 1;
-            tfSpecialite = new JTextField(20);
-            panelInfo.add(tfSpecialite, gbc);
-
-            // Horaires
-            gbc.gridx = 0;
-            gbc.gridy = 3;
-            gbc.weightx = 0;
-            panelInfo.add(new JLabel("Horaires:"), gbc);
-
-            gbc.gridx = 1;
-            gbc.weightx = 1;
-            tfHoraires = new JTextField(20);
-            panelInfo.add(tfHoraires, gbc);
-
-            // Panel principal du formulaire
-            JPanel panelFormulaire = new JPanel(new BorderLayout());
-            panelFormulaire.add(panelLogin, BorderLayout.NORTH);
-            panelFormulaire.add(panelInfo, BorderLayout.CENTER);
+            pfPassword = new JPasswordField(20);
+            panelLogin.add(pfPassword, gbcLogin);
 
             // Boutons
             JPanel panelBoutons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
             btnValider = new JButton("Valider");
             btnAnnuler = new JButton("Annuler");
 
-            System.out.println("Création des boutons du formulaire médecin");
-            System.out.println("btnValider créé: " + (btnValider != null));
-            System.out.println("btnAnnuler créé: " + (btnAnnuler != null));
-
             panelBoutons.add(btnValider);
             panelBoutons.add(btnAnnuler);
 
-            dialogFormulaire.add(panelFormulaire, BorderLayout.CENTER);
-            dialogFormulaire.add(panelBoutons, BorderLayout.SOUTH);
-        }
+            // Panneau principal du formulaire
+            JPanel mainPanel = new JPanel(new BorderLayout());
+            JPanel fieldsPanel = new JPanel(new BorderLayout());
+            fieldsPanel.add(panel, BorderLayout.NORTH);
+            fieldsPanel.add(panelLogin, BorderLayout.CENTER);
 
-        // S'assurer que les boutons sont visibles
-        if (btnValider != null) {
-            btnValider.setVisible(true);
-        }
+            mainPanel.add(fieldsPanel, BorderLayout.CENTER);
+            mainPanel.add(panelBoutons, BorderLayout.SOUTH);
 
-        if (btnAnnuler != null) {
-            btnAnnuler.setVisible(true);
+            dialogFormulaire.add(mainPanel);
+        }
+    }
+
+    // Méthode pour afficher le formulaire d'ajout
+    public void afficherFormulaireAjout() {
+        modeAjout = true;
+        creerFormulaire();
+
+        // Réinitialiser tous les champs
+        tfNom.setText("");
+        tfPrenom.setText("");
+        tfSpecialite.setText("");
+        tfHoraires.setText("");
+        tfLogin.setText("");
+        pfPassword.setText("");
+
+        // Afficher le panneau de login pour l'ajout
+        Container contentPane = dialogFormulaire.getContentPane();
+        JPanel mainPanel = (JPanel) contentPane.getComponent(0);
+        JPanel fieldsPanel = (JPanel) mainPanel.getComponent(0);
+        JPanel loginPanel = (JPanel) fieldsPanel.getComponent(1);
+        loginPanel.setVisible(true);
+
+        dialogFormulaire.setTitle("Ajouter un médecin");
+        dialogFormulaire.setVisible(true);
+    }
+
+    // Méthode pour afficher le formulaire de modification
+    public void afficherFormulaireModification(int id) {
+        modeAjout = false;
+        idMedecinSelectionne = id;
+        creerFormulaire();
+
+        // Charger les données du médecin
+        Medecin medecin = Medecin.getMedecinById(id);
+        if (medecin != null) {
+            tfNom.setText(medecin.getNom());
+            tfPrenom.setText(medecin.getPrenom());
+            tfSpecialite.setText(medecin.getSpecialite());
+            tfHoraires.setText(medecin.getHoraires());
+
+            // Cacher le panneau de login pour la modification
+            Container contentPane = dialogFormulaire.getContentPane();
+            JPanel mainPanel = (JPanel) contentPane.getComponent(0);
+            JPanel fieldsPanel = (JPanel) mainPanel.getComponent(0);
+            JPanel loginPanel = (JPanel) fieldsPanel.getComponent(1);
+            loginPanel.setVisible(false);
+
+            dialogFormulaire.setTitle("Modifier un médecin");
+            dialogFormulaire.setVisible(true);
+        }
+    }
+
+    // Méthodes d'affichage et de mise à jour
+    public void afficherDonnees(List<Medecin> medecins) {
+        modelTable.setRowCount(0);
+
+        for (Medecin medecin : medecins) {
+            modelTable.addRow(new Object[] {
+                    medecin.getId(),
+                    medecin.getNom(),
+                    medecin.getPrenom(),
+                    medecin.getSpecialite(),
+                    medecin.getHoraires()
+            });
         }
     }
 
@@ -285,7 +267,7 @@ public class VueMedecin extends JPanel {
         return JOptionPane.showConfirmDialog(this, message, titre, JOptionPane.YES_NO_OPTION);
     }
 
-    // Getters pour les composants d'interface utilisateur
+    // Getters
     public Utilisateur getUtilisateur() {
         return utilisateur;
     }
@@ -322,6 +304,7 @@ public class VueMedecin extends JPanel {
         return btnRafraichir;
     }
 
+    // Getters pour le formulaire
     public JDialog getDialogFormulaire() {
         return dialogFormulaire;
     }
@@ -346,8 +329,8 @@ public class VueMedecin extends JPanel {
         return tfLogin;
     }
 
-    public JTextField getTfPassword() {
-        return tfPassword;
+    public JPasswordField getPfPassword() {
+        return pfPassword;
     }
 
     public JButton getBtnValider() {

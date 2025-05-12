@@ -100,6 +100,15 @@ public class Patient extends Personne {
     }
 
     /**
+     * Retourne une représentation textuelle du patient.
+     * @return Le prénom et le nom du patient
+     */
+    @Override
+    public String toString() {
+        return prenom + " " + nom;
+    }
+
+    /**
      * Enregistre le patient dans la base de données.
      * @return true si l'enregistrement a réussi, false sinon
      */
@@ -193,12 +202,12 @@ public class Patient extends Personne {
 
             while (rs.next()) {
                 Patient patient = new Patient(
-                    rs.getInt("id"),
-                    rs.getString("nom"),
-                    rs.getString("prenom"),
-                    rs.getDate("date_naissance"),
-                    rs.getString("telephone"),
-                    rs.getString("numero_dossier")
+                        rs.getInt("id"),
+                        rs.getString("nom"),
+                        rs.getString("prenom"),
+                        rs.getDate("date_naissance"),
+                        rs.getString("telephone"),
+                        rs.getString("numero_dossier")
                 );
                 patients.add(patient);
             }
@@ -227,12 +236,12 @@ public class Patient extends Personne {
 
             if (rs.next()) {
                 Patient patient = new Patient(
-                    rs.getInt("id"),
-                    rs.getString("nom"),
-                    rs.getString("prenom"),
-                    rs.getDate("date_naissance"),
-                    rs.getString("telephone"),
-                    rs.getString("numero_dossier")
+                        rs.getInt("id"),
+                        rs.getString("nom"),
+                        rs.getString("prenom"),
+                        rs.getDate("date_naissance"),
+                        rs.getString("telephone"),
+                        rs.getString("numero_dossier")
                 );
                 rs.close();
                 ps.close();
@@ -262,12 +271,12 @@ public class Patient extends Personne {
 
             if (rs.next()) {
                 Patient patient = new Patient(
-                    rs.getInt("id"),
-                    rs.getString("nom"),
-                    rs.getString("prenom"),
-                    rs.getDate("date_naissance"),
-                    rs.getString("telephone"),
-                    rs.getString("numero_dossier")
+                        rs.getInt("id"),
+                        rs.getString("nom"),
+                        rs.getString("prenom"),
+                        rs.getDate("date_naissance"),
+                        rs.getString("telephone"),
+                        rs.getString("numero_dossier")
                 );
                 rs.close();
                 ps.close();
@@ -287,7 +296,7 @@ public class Patient extends Personne {
      * @param idMedecin L'identifiant du médecin
      * @return Liste des patients suivis par le médecin
      */
-    public static List<Patient> afficherParMedecin(int idMedecin) {
+    public static List<Patient> getPatientsParMedecin(int idMedecin) {
         List<Patient> patients = new ArrayList<>();
         Connection connection = DatabaseConnexion.getConnexion();
         String query = "SELECT DISTINCT p.* FROM patients p " +
@@ -301,12 +310,12 @@ public class Patient extends Personne {
 
             while (rs.next()) {
                 Patient patient = new Patient(
-                    rs.getInt("id"),
-                    rs.getString("nom"),
-                    rs.getString("prenom"),
-                    rs.getDate("date_naissance"),
-                    rs.getString("telephone"),
-                    rs.getString("numero_dossier")
+                        rs.getInt("id"),
+                        rs.getString("nom"),
+                        rs.getString("prenom"),
+                        rs.getDate("date_naissance"),
+                        rs.getString("telephone"),
+                        rs.getString("numero_dossier")
                 );
                 patients.add(patient);
             }
@@ -336,5 +345,42 @@ public class Patient extends Personne {
         }
 
         return patients;
+    }
+
+    /**
+     * Recherche un patient par son identifiant.
+     * @param id L'identifiant du patient
+     * @return Le patient trouvé ou null si aucun patient ne correspond
+     */
+    public static Patient getPatientById(int id) {
+        Patient patient = new Patient();
+        Personne personne = patient.rechercherParId(id);
+        if (personne instanceof Patient) {
+            return (Patient) personne;
+        }
+        return null;
+    }
+
+    /**
+     * Modifie un patient existant.
+     * @param id L'identifiant du patient
+     * @param nom Le nouveau nom du patient
+     * @param prenom Le nouveau prénom du patient
+     * @param dateNaissance La nouvelle date de naissance du patient
+     * @param telephone Le nouveau numéro de téléphone du patient
+     * @return true si la modification a réussi, false sinon
+     */
+    public static boolean modifierPatient(int id, String nom, String prenom, Date dateNaissance, String telephone) {
+        Patient patient = getPatientById(id);
+        if (patient == null) {
+            return false;
+        }
+
+        patient.setNom(nom);
+        patient.setPrenom(prenom);
+        patient.setDateNaissance(dateNaissance);
+        patient.setTelephone(telephone);
+
+        return patient.enregistrer();
     }
 }

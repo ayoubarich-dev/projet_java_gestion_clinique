@@ -2,8 +2,6 @@ package fr.clinique.controller;
 
 import fr.clinique.model.*;
 import fr.clinique.observer.NotificationManager;
-import fr.clinique.util.ExcelExporter;
-import fr.clinique.util.PDFExporter;
 import fr.clinique.view.VueRendezVous;
 
 import javax.swing.*;
@@ -37,9 +35,6 @@ public class ControleurRendezVous {
 
         // Ajouter les écouteurs d'événements
         ajouterEcouteurs();
-
-        // Réattacher les écouteurs aux boutons du formulaire
-        attacherEcouteursFormulaire();
     }
 
     /**
@@ -55,13 +50,13 @@ public class ControleurRendezVous {
 
             if (medecin != null) {
                 // Récupérer uniquement les rendez-vous de ce médecin
-                rendezVousList = RendezVousModel.getRendezVousParMedecin(medecin.getId());
+                rendezVousList = RendezVous.getRendezVousParMedecin(medecin.getId());
             } else {
                 rendezVousList = new ArrayList<>(); // Liste vide si le médecin n'est pas trouvé
             }
         } else {
             // Pour les administrateurs et secrétaires, on affiche tous les rendez-vous
-            rendezVousList = RendezVousModel.getTousRendezVous();
+            rendezVousList = RendezVous.getTousRendezVous();
         }
 
         vue.afficherDonnees(rendezVousList);
@@ -75,25 +70,48 @@ public class ControleurRendezVous {
         vue.getBtnAjouter().addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                List<Patient> patients = Patient.getAllPatients();
-                List<Medecin> medecins = Medecin.afficherTousMedecins();
+                System.out.println("=== Début ajout rendez-vous ===");
 
-                // Vérifier qu'il y a des patients et médecins disponibles
-                if (patients.isEmpty()) {
-                    vue.afficherMessage("Aucun patient enregistré. Veuillez d'abord ajouter un patient.", "Aucun patient", JOptionPane.WARNING_MESSAGE);
-                    return;
+                try {
+                    // Récupérer les listes de patients et médecins
+                    List<Patient> patients = Patient.getAllPatients();
+                    List<Medecin> medecins = Medecin.getAllMedecins();
+
+                    System.out.println("Nombre de patients récupérés: " + patients.size());
+                    System.out.println("Nombre de médecins récupérés: " + medecins.size());
+
+                    // Debug: afficher les détails des patients
+                    for (Patient p : patients) {
+                        System.out.println("Patient: " + p.getId() + " - " + p.getNom() + " " + p.getPrenom());
+                    }
+
+                    // Debug: afficher les détails des médecins
+                    for (Medecin m : medecins) {
+                        System.out.println("Médecin: " + m.getId() + " - " + m.getNom() + " " + m.getPrenom() + " (" + m.getSpecialite() + ")");
+                    }
+
+                    // Vérifier qu'il y a des patients et médecins disponibles
+                    if (patients.isEmpty()) {
+                        vue.afficherMessage("Aucun patient enregistré. Veuillez d'abord ajouter un patient.", "Aucun patient", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+
+                    if (medecins.isEmpty()) {
+                        vue.afficherMessage("Aucun médecin enregistré. Veuillez d'abord ajouter un médecin.", "Aucun médecin", JOptionPane.WARNING_MESSAGE);
+                        return;
+                    }
+
+                    // Remplir les comboboxes et afficher le formulaire
+                    vue.remplirComboBoxes(patients, medecins);
+                    vue.afficherFormulaireAjout();
+
+                    System.out.println("Formulaire d'ajout affiché");
+
+                } catch (Exception ex) {
+                    System.err.println("Erreur lors de l'affichage du formulaire: " + ex.getMessage());
+                    ex.printStackTrace();
+                    vue.afficherMessage("Erreur lors du chargement des données: " + ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
                 }
-
-                if (medecins.isEmpty()) {
-                    vue.afficherMessage("Aucun médecin enregistré. Veuillez d'abord ajouter un médecin.", "Aucun médecin", JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
-
-                vue.remplirComboBoxes(patients, medecins);
-                vue.afficherFormulaireAjout();
-
-                // Réattacher les écouteurs aux boutons du formulaire
-                attacherEcouteursFormulaire();
             }
         });
 
@@ -106,18 +124,23 @@ public class ControleurRendezVous {
                     int id = (int) vue.getModelTable().getValueAt(selectedRow, 0);
                     vue.setIdRendezVousSelectionne(id);
 
-                    // Récupérer les listes de patients et médecins
-                    List<Patient> patients = Patient.getAllPatients();
-                    List<Medecin> medecins = Medecin.afficherTousMedecins();
-                    vue.remplirComboBoxes(patients, medecins);
+                    try {
+                        // Récupérer les listes de patients et médecins
+                        List<Patient> patients = Patient.getAllPatients();
+                        List<Medecin> medecins = Medecin.getAllMedecins();
+                        vue.remplirComboBoxes(patients, medecins);
 
-                    // Récupérer le rendez-vous
-                    RendezVous rendezVous = RendezVousModel.getRendezVousById(id);
-                    if (rendezVous != null) {
-                        vue.afficherFormulaireModification(id);
-                        vue.remplirFormulaireModification(rendezVous);
-                    } else {
-                        vue.afficherMessage("Rendez-vous introuvable", "Erreur", JOptionPane.ERROR_MESSAGE);
+                        // Récupérer le rendez-vous
+                        RendezVous rendezVous = RendezVous.getRendezVousById(id);
+                        if (rendezVous != null) {
+                            vue.afficherFormulaireModification(id);
+                            vue.remplirFormulaireModification(rendezVous);
+                        } else {
+                            vue.afficherMessage("Rendez-vous introuvable", "Erreur", JOptionPane.ERROR_MESSAGE);
+                        }
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                        vue.afficherMessage("Erreur lors du chargement: " + ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
                     }
                 } else {
                     vue.afficherMessage("Veuillez sélectionner un rendez-vous à modifier", "Aucune sélection", JOptionPane.WARNING_MESSAGE);
@@ -135,12 +158,17 @@ public class ControleurRendezVous {
                     int confirm = vue.afficherConfirmation("Êtes-vous sûr de vouloir supprimer ce rendez-vous ?", "Confirmation de suppression");
 
                     if (confirm == JOptionPane.YES_OPTION) {
-                        boolean result = RendezVousModel.supprimerRendezVous(id);
-                        if (result) {
-                            vue.afficherMessage("Rendez-vous supprimé avec succès", "Suppression réussie", JOptionPane.INFORMATION_MESSAGE);
-                            chargerDonnees();
-                        } else {
-                            vue.afficherMessage("Erreur lors de la suppression du rendez-vous", "Erreur", JOptionPane.ERROR_MESSAGE);
+                        try {
+                            boolean result = RendezVous.supprimerRendezVous(id);
+                            if (result) {
+                                vue.afficherMessage("Rendez-vous supprimé avec succès", "Suppression réussie", JOptionPane.INFORMATION_MESSAGE);
+                                chargerDonnees();
+                            } else {
+                                vue.afficherMessage("Erreur lors de la suppression du rendez-vous", "Erreur", JOptionPane.ERROR_MESSAGE);
+                            }
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                            vue.afficherMessage("Erreur: " + ex.getMessage(), "Erreur", JOptionPane.ERROR_MESSAGE);
                         }
                     }
                 } else {
@@ -172,94 +200,78 @@ public class ControleurRendezVous {
                 if (e.getClickCount() == 2) {
                     int selectedRow = vue.getTableRendezVous().getSelectedRow();
                     if (selectedRow >= 0) {
-                        int id = (int) vue.getModelTable().getValueAt(selectedRow, 0);
-                        vue.setIdRendezVousSelectionne(id);
+                        try {
+                            int id = (int) vue.getModelTable().getValueAt(selectedRow, 0);
+                            vue.setIdRendezVousSelectionne(id);
 
-                        // Récupérer les listes de patients et médecins
-                        List<Patient> patients = Patient.getAllPatients();
-                        List<Medecin> medecins = Medecin.afficherTousMedecins();
-                        vue.remplirComboBoxes(patients, medecins);
+                            // Récupérer les listes de patients et médecins
+                            List<Patient> patients = Patient.getAllPatients();
+                            List<Medecin> medecins = Medecin.getAllMedecins();
+                            vue.remplirComboBoxes(patients, medecins);
 
-                        // Récupérer le rendez-vous
-                        RendezVous rendezVous = RendezVousModel.getRendezVousById(id);
-                        if (rendezVous != null) {
-                            vue.afficherFormulaireModification(id);
-                            vue.remplirFormulaireModification(rendezVous);
+                            // Récupérer le rendez-vous
+                            RendezVous rendezVous = RendezVous.getRendezVousById(id);
+                            if (rendezVous != null) {
+                                vue.afficherFormulaireModification(id);
+                                vue.remplirFormulaireModification(rendezVous);
+                            }
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
                         }
                     }
                 }
             }
         });
-
-        // Bouton Valider du formulaire
-        if (vue.getBtnValider() != null) {
-            vue.getBtnValider().addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    validerFormulaire();
-                }
-            });
-        }
-
-        // Bouton Annuler du formulaire
-        if (vue.getBtnAnnuler() != null) {
-            vue.getBtnAnnuler().addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    vue.getDialogFormulaire().dispose();
-                }
-            });
-        }
     }
 
-    /**
-     * Valide le formulaire d'ajout ou de modification d'un rendez-vous.
-     */
     /**
      * Valide le formulaire d'ajout ou de modification d'un rendez-vous.
      */
     private void validerFormulaire() {
         System.out.println("Début de la validation du formulaire rendez-vous");
 
-        // Vérifier que tous les champs sont remplis
-        if (vue.getCbPatient().getSelectedIndex() == -1 ||
-                vue.getCbMedecin().getSelectedIndex() == -1 ||
-                vue.getFtfDate().getText().trim().isEmpty() ||
-                vue.getTfHeure().getText().trim().isEmpty()) {
-
-            vue.afficherMessage("Veuillez remplir tous les champs obligatoires", "Erreur", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        // Vérifier le format de la date
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-        sdf.setLenient(false);
-        Date date;
-
         try {
-            date = sdf.parse(vue.getFtfDate().getText());
-        } catch (ParseException e) {
-            vue.afficherMessage("Format de date invalide. Utilisez JJ/MM/AAAA", "Erreur", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+            // Vérifier que tous les champs sont remplis
+            if (vue.getCbPatient().getSelectedIndex() == -1 ||
+                    vue.getCbMedecin().getSelectedIndex() == -1 ||
+                    vue.getFtfDate().getText().trim().isEmpty() ||
+                    vue.getTfHeure().getText().trim().isEmpty()) {
 
-        // Vérifier le format de l'heure (HH:MM)
-        String heure = vue.getTfHeure().getText().trim();
-        if (!heure.matches("^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$")) {
-            vue.afficherMessage("Format d'heure invalide. Utilisez HH:MM", "Erreur", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+                vue.afficherMessage("Veuillez remplir tous les champs obligatoires", "Erreur", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
-        Patient patient = (Patient) vue.getCbPatient().getSelectedItem();
-        Medecin medecin = (Medecin) vue.getCbMedecin().getSelectedItem();
-        String motif = vue.getTfMotif().getText().trim();
+            // Vérifier le format de la date
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+            sdf.setLenient(false);
+            Date date;
 
-        boolean result;
-        try {
+            try {
+                date = sdf.parse(vue.getFtfDate().getText());
+            } catch (ParseException e) {
+                vue.afficherMessage("Format de date invalide. Utilisez JJ/MM/AAAA", "Erreur", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // Vérifier le format de l'heure (HH:MM)
+            String heure = vue.getTfHeure().getText().trim();
+            if (!heure.matches("^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$")) {
+                vue.afficherMessage("Format d'heure invalide. Utilisez HH:MM", "Erreur", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            Patient patient = (Patient) vue.getCbPatient().getSelectedItem();
+            Medecin medecin = (Medecin) vue.getCbMedecin().getSelectedItem();
+            String motif = vue.getTfMotif().getText().trim();
+
+            System.out.println("Patient sélectionné: " + patient.getNom() + " " + patient.getPrenom());
+            System.out.println("Médecin sélectionné: " + medecin.getNom() + " " + medecin.getPrenom());
+
+            boolean result;
             if (vue.isModeAjout()) {
                 // Ajouter un nouveau rendez-vous
                 System.out.println("Tentative d'ajout d'un nouveau rendez-vous");
-                result = RendezVousModel.ajouterRendezVous(patient.getId(), medecin.getId(), date, heure, motif);
+                result = RendezVous.ajouterRendezVous(patient.getId(), medecin.getId(), date, heure, motif);
 
                 if (result) {
                     System.out.println("Rendez-vous ajouté avec succès");
@@ -286,7 +298,7 @@ public class ControleurRendezVous {
             } else {
                 // Modifier un rendez-vous existant
                 System.out.println("Tentative de modification du rendez-vous #" + vue.getIdRendezVousSelectionne());
-                result = RendezVousModel.modifierRendezVous(vue.getIdRendezVousSelectionne(), patient.getId(), medecin.getId(), date, heure, motif);
+                result = RendezVous.modifierRendezVous(vue.getIdRendezVousSelectionne(), patient.getId(), medecin.getId(), date, heure, motif);
 
                 if (result) {
                     System.out.println("Rendez-vous modifié avec succès");
@@ -328,6 +340,10 @@ public class ControleurRendezVous {
                     validerFormulaire();
                 }
             });
+
+            System.out.println("Écouteur attaché au bouton Valider");
+        } else {
+            System.err.println("ERREUR: getBtnValider() retourne null!");
         }
 
         if (vue.getBtnAnnuler() != null) {
@@ -346,8 +362,13 @@ public class ControleurRendezVous {
                     }
                 }
             });
+
+            System.out.println("Écouteur attaché au bouton Annuler");
+        } else {
+            System.err.println("ERREUR: getBtnAnnuler() retourne null!");
         }
     }
+
     /**
      * Exporte les rendez-vous au format Excel.
      */
@@ -364,11 +385,11 @@ public class ControleurRendezVous {
                 cheminFichier += ".xlsx";
             }
 
-            // Récupérer la liste des rendez-vous
-            List<RendezVous> rendezVousList = RendezVousModel.getTousRendezVous();
-
             try {
-                boolean result = RendezVousModel.exporterExcel(rendezVousList, cheminFichier);
+                // Récupérer la liste des rendez-vous
+                List<RendezVous> rendezVousList = RendezVous.getTousRendezVous();
+
+                boolean result = RendezVous.exporterExcel(rendezVousList, cheminFichier);
 
                 if (result) {
                     // Ajouter une notification
@@ -402,11 +423,11 @@ public class ControleurRendezVous {
                 cheminFichier += ".pdf";
             }
 
-            // Récupérer la liste des rendez-vous
-            List<RendezVous> rendezVousList = RendezVousModel.getTousRendezVous();
-
             try {
-                boolean result = RendezVousModel.exporterPDF(rendezVousList, cheminFichier);
+                // Récupérer la liste des rendez-vous
+                List<RendezVous> rendezVousList = RendezVous.getTousRendezVous();
+
+                boolean result = RendezVous.exporterPDF(rendezVousList, cheminFichier);
 
                 if (result) {
                     // Ajouter une notification
